@@ -1,0 +1,95 @@
+/* ===============================
+   Global
+================================ */
+html,
+body {
+  background: #ffffff !important;
+}
+
+.swagger-ui {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* ===============================
+   Top bar / Scheme
+================================ */
+.swagger-ui .topbar,
+.swagger-ui .scheme-container {
+  background: #ffffff !important;
+}
+
+/* ===============================
+   Endpoint block
+================================ */
+.swagger-ui .opblock {
+  background: #ffffff !important;
+  border: 1px solid #dddddd !important;
+}
+
+.swagger-ui .opblock-summary {
+  background: #f9f9f9 !important;
+}
+
+.swagger-ui .opblock-description-wrapper,
+.swagger-ui .opblock-external-docs-wrapper,
+.swagger-ui .opblock-title_normal {
+  background: #ffffff !important;
+}
+
+/* ===============================
+   Curl / Request / Response panels
+================================ */
+.swagger-ui .curl-command,
+.swagger-ui .request-url,
+.swagger-ui .responses-wrapper,
+.swagger-ui .response,
+.swagger-ui .response-col_status,
+.swagger-ui .response-col_links,
+.swagger-ui .response-col_description {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* ===============================
+   Code block (Response body, Curl)
+================================ */
+.swagger-ui pre,
+.swagger-ui code,
+.swagger-ui .highlight-code,
+.swagger-ui .microlight {
+  /* background: #473d3d !important; */
+  color: #ffffff !important;
+}
+
+/* ===============================
+   Headers / Tables
+================================ */
+.swagger-ui table,
+.swagger-ui thead,
+.swagger-ui tbody,
+.swagger-ui tr,
+.swagger-ui td,
+.swagger-ui th {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #dddddd !important;
+}
+
+/* ===============================
+   Buttons / Inputs
+================================ */
+.swagger-ui input,
+.swagger-ui textarea,
+.swagger-ui select {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #cccccc !important;
+}
+
+/* ===============================
+   Remove dark-mode filters
+================================ */
+.swagger-ui {
+  filter: none !important;
+}

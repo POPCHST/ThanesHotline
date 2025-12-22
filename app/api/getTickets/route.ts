@@ -1,0 +1,146 @@
+/**
+ * @swagger
+ * /api/getTickets:
+ *   get:
+ *     summary: Get tickets with filters
+ *     tags:
+ *       - Get
+ *     parameters:
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Start date (yyyy-mm-dd)
+ *         example: 2025-12-01
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: End date (yyyy-mm-dd)
+ *         example: 2025-12-17
+ *       - in: query
+ *         name: status_code
+ *         schema:
+ *           type: string
+ *         description: Ticket status
+ *         example: open
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: Search by ticket_no
+ *         example: TCK-20251217
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+import pool from "@/lib/db";
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+
+  const dateFrom = searchParams.get("date_from");
+  const dateTo = searchParams.get("date_to");
+  const statusCode = searchParams.get("status_code");
+  const keyword = searchParams.get("keyword");
+
+  let sql = `
+    SELECT
+        t.ticket_id,
+        t.ticket_no,
+
+        -- Customer
+        t.customer_id,
+        c.customer_name,
+
+        -- Device
+        t.device_id,
+        d.device_name,
+
+        -- Issue type
+        t.issue_type_id,
+
+        -- Ticket info
+        t.issue_title,
+        t.issue_detail,
+        t.priority_code,
+        t.impact_level,
+        t.urgency_level,
+
+        -- Department
+        t.department_id,
+        dp.department_name,
+
+        -- Assigned user
+        t.assigned_user_id,
+        u.full_name AS assigned_user_name,
+
+        -- Tag
+        t.tag_id,
+        tg.tag_name,
+
+        -- Status
+        t.status_code,
+        st.status_name,
+
+        -- Flags
+        t.is_service_case,
+        t.is_reopen,
+        t.reopen_count,
+
+        -- Dates
+        t.opened_at,
+        t.first_response_at,
+        t.resolved_at,
+        t.closed_at,
+
+        -- Audit
+        t.created_by,
+        t.created_at,
+        t.updated_at
+
+    FROM tickets t
+    LEFT JOIN m_customers c ON t.customer_id = c.customer_id
+    LEFT JOIN m_devices d ON t.device_id = d.device_id
+    LEFT JOIN m_issue_types it ON t.issue_type_id = it.issue_type_id
+    LEFT JOIN m_departments dp ON t.department_id = dp.department_id
+    LEFT JOIN m_users u ON t.assigned_user_id = u.user_id
+    LEFT JOIN m_tags tg ON t.tag_id = tg.tag_id
+    LEFT JOIN m_ticket_status st ON t.status_code = st.status_code
+    WHERE 1=1
+  `;
+
+  const params: any[] = [];
+
+  // ===== filter: date range =====
+  if (dateFrom) {
+    sql += ` AND DATE(t.opened_at) >= ?`;
+    params.push(dateFrom);
+  }
+
+  if (dateTo) {
+    sql += ` AND DATE(t.opened_at) <= ?`;
+    params.push(dateTo);
+  }
+
+  // ===== filter: status =====
+  if (statusCode) {
+    sql += ` AND t.status_code = ?`;
+    params.push(statusCode);
+  }
+
+  // ===== search: ticket_no =====
+  if (keyword) {
+    sql += ` AND t.ticket_no LIKE ?`;
+    params.push(`%${keyword}%`);
+  }
+
+  // ===== order =====
+  sql += ` ORDER BY t.created_at ASC`;
+
+  const [rows] = await pool.query(sql, params);
+
+  return Response.json(rows);
+}
