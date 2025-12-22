@@ -161,7 +161,7 @@ export const swaggerSpec = {
             "application/x-www-form-urlencoded": {
               schema: {
                 type: "object",
-                required: ["username", "password"],
+                required: ["username", "password", "department_id"],
                 properties: {
                   username: {
                     type: "string",
@@ -170,6 +170,10 @@ export const swaggerSpec = {
                   password: {
                     type: "string",
                     example: "123456",
+                  },
+                  department_id: {
+                    type: "integer",
+                    example: 10,
                   },
                 },
               },
@@ -184,16 +188,45 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    message: { type: "string" },
-                    token: { type: "string" },
+                    message: {
+                      type: "string",
+                      example: "Login success",
+                    },
+                    token: {
+                      type: "string",
+                      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    },
                     user: {
                       type: "object",
                       properties: {
-                        user_id: { type: "integer" },
-                        username: { type: "string" },
-                        full_name: { type: "string" },
-                        role_id: { type: "integer" },
-                        department_id: { type: "integer" },
+                        user_id: {
+                          type: "integer",
+                          example: 1,
+                        },
+                        username: {
+                          type: "string",
+                          example: "admin",
+                        },
+                        full_name: {
+                          type: "string",
+                          example: "System Admin",
+                        },
+                        role_id: {
+                          type: "integer",
+                          example: 1,
+                        },
+                        department_id: {
+                          type: "integer",
+                          example: 10,
+                        },
+                        department_code: {
+                          type: "string",
+                          example: "IT",
+                        },
+                        department_name: {
+                          type: "string",
+                          example: "IT Department",
+                        },
                       },
                     },
                   },
@@ -201,18 +234,62 @@ export const swaggerSpec = {
               },
             },
           },
+
           400: {
-            description: "username and password are required",
+            description: "username, password and department_id are required",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example:
+                        "username, password and department_id are required",
+                    },
+                  },
+                },
+              },
+            },
           },
+
           401: {
             description: "Invalid username or password",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "Invalid username or password",
+                    },
+                  },
+                },
+              },
+            },
           },
+
           403: {
-            description: "User is inactive",
+            description: "User or department inactive",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "Department is inactive",
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
     },
+
     "/api/roles": {
       get: {
         summary: "Get roles list",
