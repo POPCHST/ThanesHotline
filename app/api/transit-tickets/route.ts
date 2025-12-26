@@ -115,7 +115,6 @@ export async function POST(req: Request) {
       !device_name ||
       !issue_title ||
       !issue_detail ||
-      !priority_code ||
       !department_id
     ) {
       return Response.json(
