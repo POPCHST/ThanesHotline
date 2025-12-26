@@ -423,6 +423,13 @@ export const swaggerSpec = {
                     description:
                       "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย รูปแบบ YYYY-MM-DD HH:mm) ถ้าไม่ส่งมา ระบบจะใช้เวลาปัจจุบัน",
                   },
+                  resolution_text: {
+                    type: "string",
+                    nullable: true,
+                    example: "รีสตาร์ทเครื่องแล้วใช้งานได้ตามปกติ",
+                    description:
+                      "ข้อความสรุปการแก้ไข (optional) ถ้ามี ระบบจะสร้าง record ใน ticket_resolution",
+                  },
                 },
               },
             },
@@ -430,7 +437,7 @@ export const swaggerSpec = {
         },
         responses: {
           200: {
-            description: "Customer, Device and Ticket created successfully",
+            description: "Customer, Device, Ticket and Resolution created successfully",
             content: {
               "application/json": {
                 schema: {
@@ -439,7 +446,7 @@ export const swaggerSpec = {
                     message: {
                       type: "string",
                       example:
-                        "Customer, Device and Ticket created successfully",
+                        "Customer, Device, Ticket and Resolution created successfully",
                     },
                     customer_id: {
                       type: "integer",

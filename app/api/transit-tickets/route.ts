@@ -133,13 +133,9 @@ export async function POST(req: Request) {
     // ===============================
     // resolution (optional)
     // ===============================
-    const resolution_text = body.resolution_text ?? null;
-    const resolution_by =
-      body.resolution_by !== undefined ? Number(body.resolution_by) : null;
-    const resolution_at =
-      body.resolution_at && typeof body.resolution_at === "string"
-        ? body.resolution_at
-        : null;
+    const resolution_text =
+      typeof body.resolution_text === "string" ? body.resolution_text : null;
+    const resolution_by = created_by;
 
     // ===============================
     // validation
@@ -253,18 +249,17 @@ export async function POST(req: Request) {
     // ===============================
     await conn.execute(
       `
-  INSERT INTO ticket_resolution (
-    ticket_id,
-    resolution_text,
-    resolution_by,
-    resolution_at
-  ) VALUES (
-    ?, NULL, NULL, NULL
-  )
-  `,
-      [ticket_id]
+      INSERT INTO ticket_resolution (
+        ticket_id,
+        resolution_text,
+        resolution_by,
+        resolution_at
+      ) VALUES (
+        ?, ?, ?, NOW()
+      )
+      `,
+      [ticket_id, resolution_text, resolution_by]
     );
-
     await conn.commit();
 
     return Response.json({
