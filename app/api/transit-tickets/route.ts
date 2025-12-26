@@ -80,29 +80,31 @@
  *       200:
  *         description: Created customer, device and ticket successfully
  */
-
 import pool from "@/lib/db";
 
 export async function POST(req: Request) {
   const conn = await pool.getConnection();
 
   try {
-    // ===============================
-    // 1. รับ JSON
-    // ===============================
     const body = await req.json();
     console.log("REQUEST BODY:", body);
 
-    // ===== customer =====
+    // ===============================
+    // customer
+    // ===============================
     const customer_name = body.customer_name;
     const customer_ward = body.customer_ward;
     const contact_name = body.contact_name;
     const contact_phone = body.contact_phone;
 
-    // ===== device =====
+    // ===============================
+    // device
+    // ===============================
     const device_name = body.device_name;
 
-    // ===== ticket =====
+    // ===============================
+    // ticket
+    // ===============================
     const issue_title = body.issue_title;
     const issue_detail = body.issue_detail;
     const priority_code = body.priority_code;
@@ -111,10 +113,8 @@ export async function POST(req: Request) {
     const issue_type_id =
       body.issue_type_id !== undefined ? Number(body.issue_type_id) : null;
 
-    const tag_id =
-      body.tag_id !== undefined ? Number(body.tag_id) : null;
+    const tag_id = body.tag_id !== undefined ? Number(body.tag_id) : null;
 
-    // ✅ status_code เลือกใส่เองได้ / default = open
     const status_code =
       typeof body.status_code === "string" && body.status_code.trim() !== ""
         ? body.status_code
@@ -125,14 +125,24 @@ export async function POST(req: Request) {
 
     const created_by = Number(body.created_by);
 
-    // ✅ รับ created_at เป็น string ตรง ๆ (ไม่ใช้ Date)
     const created_at =
       body.created_at && typeof body.created_at === "string"
         ? body.created_at
         : null;
 
     // ===============================
-    // 2. validation
+    // resolution (optional)
+    // ===============================
+    const resolution_text = body.resolution_text ?? null;
+    const resolution_by =
+      body.resolution_by !== undefined ? Number(body.resolution_by) : null;
+    const resolution_at =
+      body.resolution_at && typeof body.resolution_at === "string"
+        ? body.resolution_at
+        : null;
+
+    // ===============================
+    // validation
     // ===============================
     if (
       !customer_name ||
@@ -153,12 +163,12 @@ export async function POST(req: Request) {
     }
 
     // ===============================
-    // 3. transaction
+    // transaction
     // ===============================
     await conn.beginTransaction();
 
     // ===============================
-    // 4. INSERT customer
+    // INSERT customer
     // ===============================
     const [custResult]: any = await conn.execute(
       `
@@ -176,7 +186,7 @@ export async function POST(req: Request) {
     if (!customer_id) throw new Error("customer insert failed");
 
     // ===============================
-    // 5. INSERT device
+    // INSERT device
     // ===============================
     const [devResult]: any = await conn.execute(
       `INSERT INTO m_devices (device_name) VALUES (?)`,
@@ -187,14 +197,11 @@ export async function POST(req: Request) {
     if (!device_id) throw new Error("device insert failed");
 
     // ===============================
-    // 6. generate ticket_no
+    // INSERT ticket
     // ===============================
     const ticket_no = `TCK-${Date.now()}`;
 
-    // ===============================
-    // 7. INSERT ticket
-    // ===============================
-    await conn.execute(
+    const [ticketResult]: any = await conn.execute(
       `
       INSERT INTO tickets (
         ticket_no,
@@ -238,12 +245,35 @@ export async function POST(req: Request) {
       ]
     );
 
+    const ticket_id = ticketResult.insertId;
+    if (!ticket_id) throw new Error("ticket insert failed");
+
+    // ===============================
+    // INSERT ticket_resolution (optional)
+    // ===============================
+    if (resolution_text || resolution_by || resolution_at) {
+      await conn.execute(
+        `
+        INSERT INTO ticket_resolution (
+          ticket_id,
+          resolution_text,
+          resolution_by,
+          resolution_at
+        ) VALUES (
+          ?, ?, ?, COALESCE(?, NOW())
+        )
+        `,
+        [ticket_id, resolution_text, resolution_by, resolution_at]
+      );
+    }
+
     await conn.commit();
 
     return Response.json({
-      message: "Customer, Device and Ticket created successfully",
+      message: "Customer, Device, Ticket and Resolution created successfully",
       customer_id,
       device_id,
+      ticket_id,
       ticket_no,
     });
   } catch (err) {
