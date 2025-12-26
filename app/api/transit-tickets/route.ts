@@ -21,6 +21,7 @@
  *               - issue_detail
  *               - priority_code
  *               - department_id
+ *               - created_by
  *             properties:
  *               customer_name:
  *                 type: string
@@ -63,6 +64,9 @@
  *               department_id:
  *                 type: integer
  *                 example: 2
+ *                created_by:
+ *                 type: integer
+ *                example: 1
  *
  *     responses:
  *       200:
@@ -102,7 +106,7 @@ export async function POST(req: Request) {
     const impact_level = body.impact_level ?? null;
     const urgency_level = body.urgency_level ?? null;
 
-    const created_by = 1;
+    const created_by = body.created_by;
 
     // ===============================
     // 2. validation (ตรงไปตรงมา)

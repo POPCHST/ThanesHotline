@@ -338,6 +338,7 @@ export const swaggerSpec = {
                   "issue_detail",
                   "priority_code",
                   "department_id",
+                  "created_by",
                 ],
                 properties: {
                   // ===== customer =====
@@ -396,6 +397,10 @@ export const swaggerSpec = {
                   department_id: {
                     type: "integer",
                     example: 2,
+                  },
+                  created_by: {
+                    type: "integer",
+                    example: 1,
                   },
                 },
               },
