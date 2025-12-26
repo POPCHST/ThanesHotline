@@ -69,8 +69,8 @@
  *                 example: 1
  *               created_at:
  *                 type: string
- *                 format: date-time
  *                 example: "2025-12-26 08:00"
+ *                 description: "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย YYYY-MM-DD HH:mm)"
  *
  *     responses:
  *       200:
@@ -82,6 +82,9 @@ export async function POST(req: Request) {
   const conn = await pool.getConnection();
 
   try {
+    // ===============================
+    // 1. รับ JSON
+    // ===============================
     const body = await req.json();
     console.log("REQUEST BODY:", body);
 
@@ -109,16 +112,16 @@ export async function POST(req: Request) {
 
     const created_by = Number(body.created_by);
 
-    // รองรับ "2025-12-26 08:00" และ "2025-12-26T08:00:00"
-    const created_at = body.created_at
-      ? new Date(
-          body.created_at.includes("T")
-            ? body.created_at
-            : body.created_at.replace(" ", "T") + ":00"
-        )
-      : null;
+    // ⭐ สำคัญที่สุด: รับ created_at เป็น STRING ตรง ๆ
+    // ตัวอย่าง: "2025-12-26 08:00"
+    const created_at =
+      body.created_at && typeof body.created_at === "string"
+        ? body.created_at
+        : null;
 
-    // ===== validation =====
+    // ===============================
+    // 2. validation
+    // ===============================
     if (
       !customer_name ||
       !customer_ward ||
@@ -139,7 +142,9 @@ export async function POST(req: Request) {
 
     await conn.beginTransaction();
 
-    // ===== insert customer =====
+    // ===============================
+    // 3. INSERT customer
+    // ===============================
     const [custResult]: any = await conn.execute(
       `
       INSERT INTO m_customers (
@@ -153,17 +158,26 @@ export async function POST(req: Request) {
     );
     const customer_id = custResult.insertId;
 
-    // ===== insert device =====
+    // ===============================
+    // 4. INSERT device
+    // ===============================
     const [devResult]: any = await conn.execute(
-      `INSERT INTO m_devices (device_name) VALUES (?)`,
+      `
+      INSERT INTO m_devices (device_name)
+      VALUES (?)
+      `,
       [device_name]
     );
     const device_id = devResult.insertId;
 
-    // ===== generate ticket_no =====
+    // ===============================
+    // 5. generate ticket_no
+    // ===============================
     const ticket_no = `TCK-${Date.now()}`;
 
-    // ===== insert ticket =====
+    // ===============================
+    // 6. INSERT ticket
+    // ===============================
     await conn.execute(
       `
       INSERT INTO tickets (
@@ -203,7 +217,7 @@ export async function POST(req: Request) {
         department_id,
         tag_id,
         created_by,
-        created_at,
+        created_at, // 👈 STRING เวลาไทย
       ]
     );
 
@@ -218,6 +232,7 @@ export async function POST(req: Request) {
   } catch (err) {
     await conn.rollback();
     console.error("ERROR:", err);
+
     return Response.json(
       { message: "transaction failed", error: String(err) },
       { status: 500 }
