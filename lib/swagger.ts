@@ -319,29 +319,52 @@ export const swaggerSpec = {
     },
     "/api/transit-tickets": {
       post: {
-        summary: "Create new ticket",
+        summary:
+          "Create customer, device and ticket in one transaction (auto-generated IDs)",
         tags: ["Insert"],
         requestBody: {
           required: true,
           content: {
-            "application/x-www-form-urlencoded": {
+            "application/json": {
               schema: {
                 type: "object",
                 required: [
+                  "customer_name",
+                  "customer_ward",
+                  "contact_name",
+                  "contact_phone",
+                  "device_name",
                   "issue_title",
                   "issue_detail",
                   "priority_code",
                   "department_id",
                 ],
                 properties: {
-                  customer_id: {
-                    type: "integer",
-                    example: 12,
+                  // ===== customer =====
+                  customer_name: {
+                    type: "string",
+                    example: "ห้องยา ICU",
                   },
-                  device_id: {
-                    type: "integer",
-                    example: 5,
+                  customer_ward: {
+                    type: "string",
+                    example: "ICU",
                   },
+                  contact_name: {
+                    type: "string",
+                    example: "พยาบาลสมศรี",
+                  },
+                  contact_phone: {
+                    type: "string",
+                    example: "0812345678",
+                  },
+
+                  // ===== device =====
+                  device_name: {
+                    type: "string",
+                    example: "เครื่องนับยา YUYAMA",
+                  },
+
+                  // ===== ticket =====
                   issue_type_id: {
                     type: "integer",
                     example: 3,
@@ -349,10 +372,6 @@ export const swaggerSpec = {
                   tag_id: {
                     type: "integer",
                     example: 4,
-                  },
-                  status_code: {
-                    type: "string",
-                    example: "open",
                   },
                   issue_title: {
                     type: "string",
@@ -385,7 +404,7 @@ export const swaggerSpec = {
         },
         responses: {
           200: {
-            description: "Created",
+            description: "Customer, Device and Ticket created successfully",
             content: {
               "application/json": {
                 schema: {
@@ -393,11 +412,20 @@ export const swaggerSpec = {
                   properties: {
                     message: {
                       type: "string",
-                      example: "Ticket created successfully",
+                      example:
+                        "Customer, Device and Ticket created successfully",
+                    },
+                    customer_id: {
+                      type: "integer",
+                      example: 15,
+                    },
+                    device_id: {
+                      type: "integer",
+                      example: 7,
                     },
                     ticket_no: {
                       type: "string",
-                      example: "TCK-20251218-101530-12",
+                      example: "TCK-20251218101530-12",
                     },
                   },
                 },
@@ -405,15 +433,15 @@ export const swaggerSpec = {
             },
           },
           400: {
-            description:
-              "issue_title, issue_detail, priority_code, department_id are required",
+            description: "Missing required fields",
           },
           500: {
-            description: "Internal server error",
+            description: "Transaction failed / Internal server error",
           },
         },
       },
     },
+
     "/api/users": {
       get: {
         summary: "Get Users list",

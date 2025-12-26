@@ -2,9 +2,9 @@
  * @swagger
  * /api/transit-tickets:
  *   post:
- *     summary: Create new ticket
+ *     summary: Create customer, device and ticket in one transaction (auto id only)
  *     tags:
- *       - Insert
+ *       - Ticket
  *     requestBody:
  *       required: true
  *       content:
@@ -12,26 +12,39 @@
  *           schema:
  *             type: object
  *             required:
+ *               - customer_name
+ *               - customer_ward
+ *               - contact_name
+ *               - contact_phone
+ *               - device_name
  *               - issue_title
  *               - issue_detail
  *               - priority_code
  *               - department_id
  *             properties:
- *               customer_id:
- *                 type: integer
- *                 example: 12
- *               device_id:
- *                 type: integer
- *                 example: 5
+ *               customer_name:
+ *                 type: string
+ *                 example: ห้องยา ICU
+ *               customer_ward:
+ *                 type: string
+ *                 example: ICU
+ *               contact_name:
+ *                 type: string
+ *                 example: พยาบาลสมศรี
+ *               contact_phone:
+ *                 type: string
+ *                 example: 0812345678
+ *
+ *               device_name:
+ *                 type: string
+ *                 example: เครื่องนับยา YUYAMA
+ *
  *               issue_type_id:
  *                 type: integer
  *                 example: 3
  *               tag_id:
  *                 type: integer
  *                 example: 4
- *               status_code:
- *                 type: string
- *                 example: open
  *               issue_title:
  *                 type: string
  *                 example: เครื่องนับยาไม่ดูดเม็ดยา
@@ -50,91 +63,121 @@
  *               department_id:
  *                 type: integer
  *                 example: 2
+ *
  *     responses:
  *       200:
- *         description: Created
+ *         description: Created customer, device and ticket successfully
  */
-
 import pool from "@/lib/db";
 
 export async function POST(req: Request) {
+  const conn = await pool.getConnection();
+
   try {
-    const formData = await req.formData();
+    // ===============================
+    // 1. รับ JSON จากหลังบ้าน
+    // ===============================
+    const body = await req.json();
+    console.log("REQUEST BODY:", body);
 
-    // ===== get form data =====
-    const customer_id = Number(formData.get("customer_id") ?? 0);
-    const device_id = Number(formData.get("device_id") ?? 0);
-    const issue_type_id = Number(formData.get("issue_type_id") ?? 0);
-    const tag_id = Number(formData.get("tag_id") ?? 0);
-    const status_code = (formData.get("status_code") as string) || "open";
+    // ===== customer =====
+    const customer_name = body.customer_name;
+    const customer_ward = body.customer_ward;
+    const contact_name = body.contact_name;
+    const contact_phone = body.contact_phone;
 
-    const issue_title = formData.get("issue_title") as string;
-    const issue_detail = formData.get("issue_detail") as string;
-    const priority_code = formData.get("priority_code") as string;
-    const impact_level = formData.get("impact_level") as string | null;
-    const urgency_level = formData.get("urgency_level") as string | null;
-    const department_id = Number(formData.get("department_id") ?? 0);
+    // ===== device =====
+    const device_name = body.device_name;
 
-    const created_by = 1; // TODO: ดึงจาก session / token
+    // ===== ticket =====
+    const issue_title = body.issue_title;
+    const issue_detail = body.issue_detail;
+    const priority_code = body.priority_code;
+    const department_id = Number(body.department_id);
 
-    // ===== validation =====
-    if (!issue_title || !issue_detail || !priority_code || !department_id) {
+    const issue_type_id = body.issue_type_id
+      ? Number(body.issue_type_id)
+      : null;
+    const tag_id = body.tag_id ? Number(body.tag_id) : null;
+    const impact_level = body.impact_level ?? null;
+    const urgency_level = body.urgency_level ?? null;
+
+    const created_by = 1;
+
+    // ===============================
+    // 2. validation (ตรงไปตรงมา)
+    // ===============================
+    if (
+      !customer_name ||
+      !customer_ward ||
+      !contact_name ||
+      !contact_phone ||
+      !device_name ||
+      !issue_title ||
+      !issue_detail ||
+      !priority_code ||
+      !department_id
+    ) {
       return Response.json(
-        {
-          message:
-            "issue_title, issue_detail, priority_code, department_id are required",
-        },
+        { message: "missing required fields" },
         { status: 400 }
       );
     }
 
-    // ===== generate ticket_no (datetime + random) =====
-    const now = new Date();
+    // ===============================
+    // 3. transaction
+    // ===============================
+    await conn.beginTransaction();
 
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const hh = String(now.getHours()).padStart(2, "0");
-    const mi = String(now.getMinutes()).padStart(2, "0");
-    const ss = String(now.getSeconds()).padStart(2, "0");
-    const rand = String(Math.floor(Math.random() * 100)).padStart(2, "0");
-
-    const runNo = `${yyyy}${mm}${dd}-${hh}${mi}${ss}-${rand}`;
-    const ticket_no = `TCK-${runNo}`;
-
-    // ===== insert ticket =====
-    await pool.query(
+    // ===============================
+    // 4. INSERT m_customers
+    // ===============================
+    const [custResult]: any = await conn.execute(
       `
-  INSERT INTO tickets (
-    ticket_no,
-    customer_id,
-    device_id,
-    issue_type_id,
-    issue_title,
-    issue_detail,
-    priority_code,
-    impact_level,
-    urgency_level,
-    department_id,
-    tag_id,
-    status_code,
-    is_service_case,
-    is_reopen,
-    reopen_count,
-    opened_at,
-    created_by,
-    created_at,
-    updated_at
-  ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    0, 0, 0, NOW(), ?, NOW(), NOW()
-  )
-  `,
-      [
+      INSERT INTO m_customers (
+        customer_name,
+        customer_ward,
+        contact_name,
+        contact_phone
+      ) VALUES (?, ?, ?, ?)
+      `,
+      [customer_name, customer_ward, contact_name, contact_phone]
+    );
+
+    const customer_id = custResult.insertId;
+    console.log("customer_id:", customer_id);
+    if (!customer_id) throw new Error("customer insert failed");
+
+    // ===============================
+    // 5. INSERT m_devices
+    // ===============================
+    const [devResult]: any = await conn.execute(
+      `
+      INSERT INTO m_devices (device_name)
+      VALUES (?)
+      `,
+      [device_name]
+    );
+
+    const device_id = devResult.insertId;
+    console.log("device_id:", device_id);
+    if (!device_id) throw new Error("device insert failed");
+
+    // ===============================
+    // 6. generate ticket_no
+    // ===============================
+    const ticket_no = `TCK-${Date.now()}`;
+
+    // ===============================
+    // 7. INSERT tickets
+    // ===============================
+    await conn.execute(
+      `
+      INSERT INTO tickets (
         ticket_no,
-        customer_id || null,
-        device_id || null,
-        issue_type_id || null,
+        customer_id,
+        device_id,
+        issue_type_id,
         issue_title,
         issue_detail,
         priority_code,
@@ -143,19 +186,51 @@ export async function POST(req: Request) {
         department_id,
         tag_id,
         status_code,
+        is_service_case,
+        is_reopen,
+        reopen_count,
+        opened_at,
+        created_by,
+        created_at,
+        updated_at
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open',
+        0, 0, 0, NOW(), ?, NOW(), NOW()
+      )
+      `,
+      [
+        ticket_no,
+        customer_id,
+        device_id,
+        issue_type_id,
+        issue_title,
+        issue_detail,
+        priority_code,
+        impact_level,
+        urgency_level,
+        department_id,
+        tag_id,
         created_by,
       ]
     );
 
+    await conn.commit();
+
+    return Response.json({
+      message: "Customer, Device and Ticket created successfully",
+      customer_id,
+      device_id,
+      ticket_no,
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error("ERROR:", err);
+
     return Response.json(
-      {
-        message: "Ticket created successfully",
-        ticket_no,
-      },
-      { status: 200 }
+      { message: "transaction failed", error: String(err) },
+      { status: 500 }
     );
-  } catch (error) {
-    console.error("Create ticket error:", error);
-    return Response.json({ message: "Internal server error" }, { status: 500 });
+  } finally {
+    conn.release();
   }
 }
