@@ -46,6 +46,10 @@
  *               tag_id:
  *                 type: integer
  *                 example: 4
+ *               status_code:
+ *                 type: string
+ *                 example: open
+ *                 description: "ถ้าไม่ส่งมา ระบบจะใช้ค่าเริ่มต้น = open"
  *               issue_title:
  *                 type: string
  *                 example: เครื่องนับยาไม่ดูดเม็ดยา
@@ -76,6 +80,7 @@
  *       200:
  *         description: Created customer, device and ticket successfully
  */
+
 import pool from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -103,17 +108,24 @@ export async function POST(req: Request) {
     const priority_code = body.priority_code;
     const department_id = Number(body.department_id);
 
-    const issue_type_id = body.issue_type_id
-      ? Number(body.issue_type_id)
-      : null;
-    const tag_id = body.tag_id ? Number(body.tag_id) : null;
+    const issue_type_id =
+      body.issue_type_id !== undefined ? Number(body.issue_type_id) : null;
+
+    const tag_id =
+      body.tag_id !== undefined ? Number(body.tag_id) : null;
+
+    // ✅ status_code เลือกใส่เองได้ / default = open
+    const status_code =
+      typeof body.status_code === "string" && body.status_code.trim() !== ""
+        ? body.status_code
+        : "open";
+
     const impact_level = body.impact_level ?? null;
     const urgency_level = body.urgency_level ?? null;
 
     const created_by = Number(body.created_by);
 
-    // ⭐ สำคัญที่สุด: รับ created_at เป็น STRING ตรง ๆ
-    // ตัวอย่าง: "2025-12-26 08:00"
+    // ✅ รับ created_at เป็น string ตรง ๆ (ไม่ใช้ Date)
     const created_at =
       body.created_at && typeof body.created_at === "string"
         ? body.created_at
@@ -140,10 +152,13 @@ export async function POST(req: Request) {
       );
     }
 
+    // ===============================
+    // 3. transaction
+    // ===============================
     await conn.beginTransaction();
 
     // ===============================
-    // 3. INSERT customer
+    // 4. INSERT customer
     // ===============================
     const [custResult]: any = await conn.execute(
       `
@@ -156,27 +171,28 @@ export async function POST(req: Request) {
       `,
       [customer_name, customer_ward, contact_name, contact_phone]
     );
+
     const customer_id = custResult.insertId;
+    if (!customer_id) throw new Error("customer insert failed");
 
     // ===============================
-    // 4. INSERT device
+    // 5. INSERT device
     // ===============================
     const [devResult]: any = await conn.execute(
-      `
-      INSERT INTO m_devices (device_name)
-      VALUES (?)
-      `,
+      `INSERT INTO m_devices (device_name) VALUES (?)`,
       [device_name]
     );
+
     const device_id = devResult.insertId;
+    if (!device_id) throw new Error("device insert failed");
 
     // ===============================
-    // 5. generate ticket_no
+    // 6. generate ticket_no
     // ===============================
     const ticket_no = `TCK-${Date.now()}`;
 
     // ===============================
-    // 6. INSERT ticket
+    // 7. INSERT ticket
     // ===============================
     await conn.execute(
       `
@@ -200,7 +216,7 @@ export async function POST(req: Request) {
         created_by,
         created_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open',
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
         0, 0, 0, NOW(), ?, COALESCE(?, NOW())
       )
       `,
@@ -216,8 +232,9 @@ export async function POST(req: Request) {
         urgency_level,
         department_id,
         tag_id,
+        status_code,
         created_by,
-        created_at, // 👈 STRING เวลาไทย
+        created_at,
       ]
     );
 

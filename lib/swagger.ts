@@ -368,12 +368,22 @@ export const swaggerSpec = {
                   // ===== ticket =====
                   issue_type_id: {
                     type: "integer",
+                    nullable: true,
                     example: 3,
                   },
                   tag_id: {
                     type: "integer",
+                    nullable: true,
                     example: 4,
                   },
+
+                  status_code: {
+                    type: "string",
+                    example: "open",
+                    description:
+                      "สถานะ ticket (ถ้าไม่ส่งมา ระบบจะตั้งค่าเริ่มต้นเป็น open)",
+                  },
+
                   issue_title: {
                     type: "string",
                     example: "เครื่องนับยาไม่ดูดเม็ดยา",
@@ -388,26 +398,30 @@ export const swaggerSpec = {
                   },
                   impact_level: {
                     type: "string",
+                    nullable: true,
                     example: "HIGH",
                   },
                   urgency_level: {
                     type: "string",
+                    nullable: true,
                     example: "URGENT",
                   },
                   department_id: {
                     type: "integer",
                     example: 2,
                   },
+
                   created_by: {
                     type: "integer",
                     example: 1,
+                    description: "user id ของผู้สร้าง ticket",
                   },
+
                   created_at: {
                     type: "string",
-                    format: "date-time",
                     example: "2025-12-26 08:00",
                     description:
-                      "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย)",
+                      "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย รูปแบบ YYYY-MM-DD HH:mm) ถ้าไม่ส่งมา ระบบจะใช้เวลาปัจจุบัน",
                   },
                 },
               },
@@ -437,7 +451,7 @@ export const swaggerSpec = {
                     },
                     ticket_no: {
                       type: "string",
-                      example: "TCK-20251218101530-12",
+                      example: "TCK-1735209600000",
                     },
                   },
                 },
@@ -453,6 +467,7 @@ export const swaggerSpec = {
         },
       },
     },
+
     "/api/users": {
       get: {
         summary: "Get Users list",
