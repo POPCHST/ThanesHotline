@@ -8,7 +8,7 @@
  *     requestBody:
  *       required: true
  *       content:
- *         application/x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             required:
@@ -64,9 +64,13 @@
  *               department_id:
  *                 type: integer
  *                 example: 2
- *                created_by:
+ *               created_by:
  *                 type: integer
- *                example: 1
+ *                 example: 1
+ *               created_at:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2025-12-26 08:00"
  *
  *     responses:
  *       200:
@@ -78,9 +82,6 @@ export async function POST(req: Request) {
   const conn = await pool.getConnection();
 
   try {
-    // ===============================
-    // 1. รับ JSON จากหลังบ้าน
-    // ===============================
     const body = await req.json();
     console.log("REQUEST BODY:", body);
 
@@ -106,11 +107,18 @@ export async function POST(req: Request) {
     const impact_level = body.impact_level ?? null;
     const urgency_level = body.urgency_level ?? null;
 
-    const created_by = body.created_by;
+    const created_by = Number(body.created_by);
 
-    // ===============================
-    // 2. validation (ตรงไปตรงมา)
-    // ===============================
+    // รองรับ "2025-12-26 08:00" และ "2025-12-26T08:00:00"
+    const created_at = body.created_at
+      ? new Date(
+          body.created_at.includes("T")
+            ? body.created_at
+            : body.created_at.replace(" ", "T") + ":00"
+        )
+      : null;
+
+    // ===== validation =====
     if (
       !customer_name ||
       !customer_ward ||
@@ -119,7 +127,9 @@ export async function POST(req: Request) {
       !device_name ||
       !issue_title ||
       !issue_detail ||
-      !department_id
+      !priority_code ||
+      !department_id ||
+      !created_by
     ) {
       return Response.json(
         { message: "missing required fields" },
@@ -127,14 +137,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // ===============================
-    // 3. transaction
-    // ===============================
     await conn.beginTransaction();
 
-    // ===============================
-    // 4. INSERT m_customers
-    // ===============================
+    // ===== insert customer =====
     const [custResult]: any = await conn.execute(
       `
       INSERT INTO m_customers (
@@ -146,34 +151,19 @@ export async function POST(req: Request) {
       `,
       [customer_name, customer_ward, contact_name, contact_phone]
     );
-
     const customer_id = custResult.insertId;
-    console.log("customer_id:", customer_id);
-    if (!customer_id) throw new Error("customer insert failed");
 
-    // ===============================
-    // 5. INSERT m_devices
-    // ===============================
+    // ===== insert device =====
     const [devResult]: any = await conn.execute(
-      `
-      INSERT INTO m_devices (device_name)
-      VALUES (?)
-      `,
+      `INSERT INTO m_devices (device_name) VALUES (?)`,
       [device_name]
     );
-
     const device_id = devResult.insertId;
-    console.log("device_id:", device_id);
-    if (!device_id) throw new Error("device insert failed");
 
-    // ===============================
-    // 6. generate ticket_no
-    // ===============================
+    // ===== generate ticket_no =====
     const ticket_no = `TCK-${Date.now()}`;
 
-    // ===============================
-    // 7. INSERT tickets
-    // ===============================
+    // ===== insert ticket =====
     await conn.execute(
       `
       INSERT INTO tickets (
@@ -194,11 +184,10 @@ export async function POST(req: Request) {
         reopen_count,
         opened_at,
         created_by,
-        created_at,
-        updated_at
+        created_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-        0, 0, 0, NOW(), ?, NOW(), NOW()
+        0, 0, 0, NOW(), ?, COALESCE(?, NOW())
       )
       `,
       [
@@ -214,6 +203,7 @@ export async function POST(req: Request) {
         department_id,
         tag_id,
         created_by,
+        created_at,
       ]
     );
 
@@ -228,7 +218,6 @@ export async function POST(req: Request) {
   } catch (err) {
     await conn.rollback();
     console.error("ERROR:", err);
-
     return Response.json(
       { message: "transaction failed", error: String(err) },
       { status: 500 }

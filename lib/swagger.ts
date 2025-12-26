@@ -402,6 +402,13 @@ export const swaggerSpec = {
                     type: "integer",
                     example: 1,
                   },
+                  created_at: {
+                    type: "string",
+                    format: "date-time",
+                    example: "2025-12-26 08:00",
+                    description:
+                      "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย)",
+                  },
                 },
               },
             },
@@ -446,7 +453,6 @@ export const swaggerSpec = {
         },
       },
     },
-
     "/api/users": {
       get: {
         summary: "Get Users list",
