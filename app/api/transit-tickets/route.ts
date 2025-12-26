@@ -69,6 +69,7 @@
  *                 example: 2
  *               assigned_user_name:
  *                  type: string
+ *                 example: user2
  *               created_by:
  *                 type: integer
  *                 example: 1
@@ -153,7 +154,7 @@ export async function POST(req: Request) {
       !device_name ||
       !issue_title ||
       !issue_detail ||
-      !priority_code ||
+      // !priority_code ||
       !department_id ||
       !created_by
     ) {
