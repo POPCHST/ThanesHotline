@@ -19,7 +19,6 @@
  *               - device_name
  *               - issue_title
  *               - issue_detail
- *               - priority_code
  *               - department_id
  *               - created_by
  *             properties:
@@ -68,6 +67,8 @@
  *               department_id:
  *                 type: integer
  *                 example: 2
+ *               assigned_user_name:
+ *                  type: string
  *               created_by:
  *                 type: integer
  *                 example: 1
@@ -109,7 +110,11 @@ export async function POST(req: Request) {
     const issue_detail = body.issue_detail;
     const priority_code = body.priority_code;
     const department_id = Number(body.department_id);
-
+    const assigned_user_name =
+      typeof body.assigned_user_name === "string" &&
+      body.assigned_user_name.trim() !== ""
+        ? body.assigned_user_name
+        : "";
     const issue_type_id =
       body.issue_type_id !== undefined ? Number(body.issue_type_id) : null;
 
@@ -210,6 +215,7 @@ export async function POST(req: Request) {
         impact_level,
         urgency_level,
         department_id,
+        assigned_user_name,
         tag_id,
         status_code,
         is_service_case,
@@ -219,7 +225,7 @@ export async function POST(req: Request) {
         created_by,
         created_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
         0, 0, 0, NOW(), ?, COALESCE(?, NOW())
       )
       `,
@@ -234,6 +240,7 @@ export async function POST(req: Request) {
         impact_level,
         urgency_level,
         department_id,
+        assigned_user_name,
         tag_id,
         status_code,
         created_by,

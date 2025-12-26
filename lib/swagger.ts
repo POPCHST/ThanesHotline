@@ -410,7 +410,9 @@ export const swaggerSpec = {
                     type: "integer",
                     example: 2,
                   },
-
+                  assigned_user_name: {
+                    type: "string",
+                  },
                   created_by: {
                     type: "integer",
                     example: 1,
@@ -437,7 +439,8 @@ export const swaggerSpec = {
         },
         responses: {
           200: {
-            description: "Customer, Device, Ticket and Resolution created successfully",
+            description:
+              "Customer, Device, Ticket and Resolution created successfully",
             content: {
               "application/json": {
                 schema: {
