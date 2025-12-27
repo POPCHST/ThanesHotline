@@ -867,5 +867,192 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/ticket-delete": {
+      put: {
+        summary:
+          "Soft delete ticket (update only is_deleted, deleted_at, deleted_by)",
+        tags: ["Ticket"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["ticket_no", "deleted_by"],
+                properties: {
+                  ticket_no: {
+                    type: "string",
+                    example: "TCK-1766819708852",
+                  },
+                  deleted_by: {
+                    type: "integer",
+                    example: 12,
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Ticket deleted successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket deleted successfully",
+                    },
+                    ticket_no: {
+                      type: "string",
+                      example: "TCK-1766819708852",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Missing required fields",
+          },
+          404: {
+            description: "Ticket not found or already deleted",
+          },
+          500: {
+            description: "Delete ticket failed",
+          },
+        },
+      },
+    },
+    "/api/ticket-update": {
+      put: {
+        summary: "Update ticket, customer and device",
+        tags: ["Ticket"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: [
+                  "ticket_no",
+                  "issue_title",
+                  "issue_detail",
+                  "department_id",
+                  "updated_by",
+                ],
+                properties: {
+                  ticket_no: {
+                    type: "string",
+                    example: "TCK-1766819708852",
+                  },
+
+                  // ===== customer =====
+                  customer_name: {
+                    type: "string",
+                    example: "ห้องยา ICU",
+                  },
+                  customer_ward: {
+                    type: "string",
+                    example: "ICU",
+                  },
+                  contact_name: {
+                    type: "string",
+                    example: "พยาบาลสมศรี",
+                  },
+                  contact_phone: {
+                    type: "string",
+                    example: "0812345678",
+                  },
+
+                  // ===== device =====
+                  device_name: {
+                    type: "string",
+                    example: "เครื่องนับยา YUYAMA",
+                  },
+
+                  // ===== ticket =====
+                  issue_type_id: {
+                    type: "integer",
+                    nullable: true,
+                    example: 3,
+                  },
+                  tag_id: {
+                    type: "integer",
+                    nullable: true,
+                    example: 4,
+                  },
+                  issue_title: {
+                    type: "string",
+                    example: "เครื่องไม่ดูดเม็ดยา",
+                  },
+                  issue_detail: {
+                    type: "string",
+                    example: "ทดสอบแล้วพบว่า sensor ค้าง",
+                  },
+                  department_id: {
+                    type: "integer",
+                    example: 2,
+                  },
+                  assigned_user_name: {
+                    type: "string",
+                    example: "user2",
+                  },
+                  status_code: {
+                    type: "string",
+                    example: "in_progress",
+                  },
+
+                  // ===== audit =====
+                  updated_by: {
+                    type: "integer",
+                    example: 12,
+                  },
+                  updated_at: {
+                    type: "string",
+                    example: "2025-12-27 15:40",
+                    description:
+                      "วันที่และเวลาที่แก้ไข (ถ้าไม่ส่งมา ระบบจะใช้เวลาปัจจุบัน)",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Ticket updated successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket updated successfully",
+                    },
+                    ticket_no: {
+                      type: "string",
+                      example: "TCK-1766819708852",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Missing required fields",
+          },
+          404: {
+            description: "Ticket not found",
+          },
+          500: {
+            description: "Update ticket failed",
+          },
+        },
+      },
+    },
   },
 };

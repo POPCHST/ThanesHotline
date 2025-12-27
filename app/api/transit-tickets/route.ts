@@ -178,8 +178,9 @@ export async function POST(req: Request) {
         customer_name,
         customer_ward,
         contact_name,
-        contact_phone
-      ) VALUES (?, ?, ?, ?)
+        contact_phone,
+        lastmodify
+      ) VALUES (?, ?, ?, ?, now())
       `,
       [customer_name, customer_ward, contact_name, contact_phone]
     );
@@ -270,7 +271,7 @@ export async function POST(req: Request) {
         [ticket_id, resolution_text, resolution_by]
       );
     }
-    
+
     await conn.commit();
 
     return Response.json({
