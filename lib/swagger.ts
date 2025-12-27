@@ -29,6 +29,14 @@ export const swaggerSpec = {
       url: "https://thanes-hotline.vercel.app",
     },
   ],
+  // servers: [
+  //   {
+  //     url:
+  //       process.env.NEXT_PUBLIC_API_BASE_URL ||
+  //       "https://thanes-hotline.vercel.app",
+  //     description: "API server",
+  //   },
+  // ],
   paths: {
     "/api/customers": {
       get: {
@@ -394,17 +402,17 @@ export const swaggerSpec = {
                   },
                   priority_code: {
                     type: "string",
-                    example: "HIGH",
+                    example: "",
                   },
                   impact_level: {
                     type: "string",
                     nullable: true,
-                    example: "HIGH",
+                    example: "",
                   },
                   urgency_level: {
                     type: "string",
                     nullable: true,
-                    example: "URGENT",
+                    example: "",
                   },
                   department_id: {
                     type: "integer",

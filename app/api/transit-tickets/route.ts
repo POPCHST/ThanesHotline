@@ -255,19 +255,22 @@ export async function POST(req: Request) {
     // ===============================
     // INSERT ticket_resolution (optional)
     // ===============================
-    await conn.execute(
-      `
-      INSERT INTO ticket_resolution (
-        ticket_id,
-        resolution_text,
-        resolution_by,
-        resolution_at
-      ) VALUES (
-        ?, ?, ?, NOW()
-      )
-      `,
-      [ticket_id, resolution_text, resolution_by]
-    );
+    if (resolution_text && resolution_text !== "") {
+      await conn.execute(
+        `
+        INSERT INTO ticket_resolution (
+          ticket_id,
+          resolution_text,
+          resolution_by,
+          resolution_at
+        ) VALUES (
+          ?, ?, ?, NOW()
+        )
+        `,
+        [ticket_id, resolution_text, resolution_by]
+      );
+    }
+    
     await conn.commit();
 
     return Response.json({
