@@ -325,6 +325,15 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/ticket-status-service": {
+      get: {
+        summary: "Get ticket-status-service list",
+        tags: ["Master"],
+        responses: {
+          200: { description: "Success" },
+        },
+      },
+    },
     "/api/transit-tickets": {
       post: {
         summary:
