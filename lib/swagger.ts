@@ -1126,5 +1126,65 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/tickets/{ticketId}/close": {
+      post: {
+        summary: "Close ticket and generate satisfaction token",
+        tags: ["Ticket"],
+        parameters: [
+          {
+            name: "ticketId",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+            example: 123,
+            description: "ID ของ ticket ที่ต้องการปิด",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Ticket closed and satisfaction token created",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket closed successfully",
+                    },
+                    ticket_id: {
+                      type: "integer",
+                      example: 123,
+                    },
+                    satisfaction_token: {
+                      type: "string",
+                      nullable: true,
+                      example: "c8f9f7b4-0b4a-4e61-a45c-9cbb0c1e9c31",
+                    },
+                    survey_url: {
+                      type: "string",
+                      nullable: true,
+                      example:
+                        "https://thanes-hotline.vercel.app/satisfaction?token=c8f9f7b4-0b4a-4e61-a45c-9cbb0c1e9c31",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid ticket id",
+          },
+          409: {
+            description: "Ticket already closed or not found",
+          },
+          500: {
+            description: "Close ticket failed",
+          },
+        },
+      },
+    },
   },
 };
