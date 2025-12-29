@@ -2,7 +2,7 @@
  * @swagger
  * /api/transit-tickets:
  *   post:
- *     summary: Create customer, device and ticket in one transaction (auto id only)
+ *     summary: Create customer, device and ticket (IT or Service) in one transaction
  *     tags:
  *       - Ticket
  *     requestBody:
@@ -25,12 +25,15 @@
  *               customer_name:
  *                 type: string
  *                 example: ห้องยา ICU
+ *
  *               customer_ward:
  *                 type: string
  *                 example: ICU
+ *
  *               contact_name:
  *                 type: string
  *                 example: พยาบาลสมศรี
+ *
  *               contact_phone:
  *                 type: string
  *                 example: 0812345678
@@ -42,46 +45,102 @@
  *               issue_type_id:
  *                 type: integer
  *                 example: 3
+ *
  *               tag_id:
  *                 type: integer
  *                 example: 4
+ *
  *               status_code:
  *                 type: string
  *                 example: open
- *                 description: "ถ้าไม่ส่งมา ระบบจะใช้ค่าเริ่มต้น = open"
+ *                 description: ถ้าไม่ส่งมา ระบบจะใช้ค่าเริ่มต้น = open
+ *
  *               issue_title:
  *                 type: string
  *                 example: เครื่องนับยาไม่ดูดเม็ดยา
+ *
  *               issue_detail:
  *                 type: string
  *                 example: เครื่องหยุดทำงานหลังเปิด 5 นาที
+ *
  *               priority_code:
  *                 type: string
  *                 example: HIGH
+ *
  *               impact_level:
  *                 type: string
  *                 example: HIGH
+ *
  *               urgency_level:
  *                 type: string
  *                 example: URGENT
+ *
  *               department_id:
  *                 type: integer
  *                 example: 2
+ *
  *               assigned_user_name:
- *                  type: string
+ *                 type: string
  *                 example: user2
+ *
  *               created_by:
  *                 type: integer
  *                 example: 1
+ *
  *               created_at:
  *                 type: string
  *                 example: "2025-12-26 08:00"
- *                 description: "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย YYYY-MM-DD HH:mm)"
+ *                 description: วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย YYYY-MM-DD HH:mm)
+ *
+ *               is_service_case:
+ *                 type: integer
+ *                 enum: [0, 1]
+ *                 example: 0
+ *                 description: "0 = IT ปกติ, 1 = Service"
+ *
+ *               service:
+ *                 type: object
+ *                 description: ข้อมูลเฉพาะ Service (ใช้เมื่อ is_service_case = 1)
+ *                 properties:
+ *                   service_types:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     example: ["repair", "replace"]
+ *
+ *                   work_order_no:
+ *                     type: string
+ *                     example: WO-2025-0001
+ *
+ *                   cost_estimate:
+ *                     type: number
+ *                     example: 1500
+ *
+ *                   serial_before:
+ *                     type: string
+ *                     example: SN-OLD-1234
+ *
+ *                   serial_after:
+ *                     type: string
+ *                     example: SN-NEW-5678
+ *
+ *                   replaced_parts:
+ *                     type: string
+ *                     example: Motor, Sensor
+ *
+ *                   service_note:
+ *                     type: string
+ *                     example: ติดตั้ง + PM
+ *
+ *               resolution_text:
+ *                 type: string
+ *                 example: เปลี่ยน motor และ calibrate เครื่องเรียบร้อย
  *
  *     responses:
  *       200:
- *         description: Created customer, device and ticket successfully
+ *         description: Created customer, device, ticket, service (optional) and resolution (optional) successfully
  */
+
 import pool from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -116,6 +175,7 @@ export async function POST(req: Request) {
       body.assigned_user_name.trim() !== ""
         ? body.assigned_user_name
         : "";
+
     const issue_type_id =
       body.issue_type_id !== undefined ? Number(body.issue_type_id) : null;
 
@@ -137,6 +197,11 @@ export async function POST(req: Request) {
         : null;
 
     // ===============================
+    // service flag
+    // ===============================
+    const is_service_case = body.is_service_case === 1 ? 1 : 0;
+
+    // ===============================
     // resolution (optional)
     // ===============================
     const resolution_text =
@@ -154,7 +219,6 @@ export async function POST(req: Request) {
       !device_name ||
       !issue_title ||
       !issue_detail ||
-      // !priority_code ||
       !department_id ||
       !created_by
     ) {
@@ -180,7 +244,7 @@ export async function POST(req: Request) {
         contact_name,
         contact_phone,
         lastmodify
-      ) VALUES (?, ?, ?, ?, now())
+      ) VALUES (?, ?, ?, ?, NOW())
       `,
       [customer_name, customer_ward, contact_name, contact_phone]
     );
@@ -228,7 +292,7 @@ export async function POST(req: Request) {
         created_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        0, 0, 0, NOW(), ?, COALESCE(?, NOW())
+        ?, 0, 0, NOW(), ?, COALESCE(?, NOW())
       )
       `,
       [
@@ -245,6 +309,7 @@ export async function POST(req: Request) {
         assigned_user_name,
         tag_id,
         status_code,
+        is_service_case,
         created_by,
         created_at,
       ]
@@ -252,6 +317,46 @@ export async function POST(req: Request) {
 
     const ticket_id = ticketResult.insertId;
     if (!ticket_id) throw new Error("ticket insert failed");
+
+    // ===============================
+    // INSERT ticket_service (เฉพาะ Service)
+    // ===============================
+    if (is_service_case === 1 && body.service) {
+      const {
+        service_types,
+        work_order_no,
+        cost_estimate,
+        serial_before,
+        serial_after,
+        replaced_parts,
+        service_note,
+      } = body.service;
+
+      await conn.execute(
+        `
+        INSERT INTO ticket_service (
+          ticket_id,
+          service_types,
+          work_order_no,
+          cost_estimate,
+          serial_before,
+          serial_after,
+          replaced_parts,
+          service_note
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          ticket_id,
+          Array.isArray(service_types) ? service_types.join(",") : null,
+          work_order_no ?? null,
+          cost_estimate ?? null,
+          serial_before ?? null,
+          serial_after ?? null,
+          replaced_parts ?? null,
+          service_note ?? null,
+        ]
+      );
+    }
 
     // ===============================
     // INSERT ticket_resolution (optional)
@@ -280,6 +385,7 @@ export async function POST(req: Request) {
       device_id,
       ticket_id,
       ticket_no,
+      is_service_case,
     });
   } catch (err) {
     await conn.rollback();

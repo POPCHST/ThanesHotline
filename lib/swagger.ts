@@ -328,7 +328,7 @@ export const swaggerSpec = {
     "/api/transit-tickets": {
       post: {
         summary:
-          "Create customer, device and ticket in one transaction (auto-generated IDs)",
+          "Create customer, device and ticket (IT or Service) in one transaction (auto-generated IDs)",
         tags: ["Insert"],
         requestBody: {
           required: true,
@@ -400,27 +400,33 @@ export const swaggerSpec = {
                     type: "string",
                     example: "เครื่องหยุดทำงานหลังเปิด 5 นาที",
                   },
+
                   priority_code: {
                     type: "string",
-                    example: "",
+                    example: "HIGH",
                   },
+
                   impact_level: {
                     type: "string",
                     nullable: true,
-                    example: "",
+                    example: "HIGH",
                   },
                   urgency_level: {
                     type: "string",
                     nullable: true,
-                    example: "",
+                    example: "URGENT",
                   },
+
                   department_id: {
                     type: "integer",
                     example: 2,
                   },
+
                   assigned_user_name: {
                     type: "string",
+                    example: "user2",
                   },
+
                   created_by: {
                     type: "integer",
                     example: 1,
@@ -431,8 +437,57 @@ export const swaggerSpec = {
                     type: "string",
                     example: "2025-12-26 08:00",
                     description:
-                      "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย รูปแบบ YYYY-MM-DD HH:mm) ถ้าไม่ส่งมา ระบบจะใช้เวลาปัจจุบัน",
+                      "วันที่และเวลาที่ต้องการสร้าง ticket (เวลาไทย YYYY-MM-DD HH:mm) ถ้าไม่ส่งมา ระบบจะใช้เวลาปัจจุบัน",
                   },
+
+                  // ===== ★ service flag =====
+                  is_service_case: {
+                    type: "integer",
+                    enum: [0, 1],
+                    example: 0,
+                    description: "0 = IT ปกติ, 1 = Service",
+                  },
+
+                  // ===== ★ service detail (optional) =====
+                  service: {
+                    type: "object",
+                    nullable: true,
+                    description:
+                      "ข้อมูลเฉพาะ Service (ใช้เมื่อ is_service_case = 1)",
+                    properties: {
+                      service_types: {
+                        type: "array",
+                        items: { type: "string" },
+                        example: ["repair", "replace"],
+                      },
+                      work_order_no: {
+                        type: "string",
+                        example: "WO-2025-0001",
+                      },
+                      cost_estimate: {
+                        type: "number",
+                        example: 1500,
+                      },
+                      serial_before: {
+                        type: "string",
+                        example: "SN-OLD-1234",
+                      },
+                      serial_after: {
+                        type: "string",
+                        example: "SN-NEW-5678",
+                      },
+                      replaced_parts: {
+                        type: "string",
+                        example: "Motor, Sensor",
+                      },
+                      service_note: {
+                        type: "string",
+                        example: "เปลี่ยนอะไหล่ + calibrate",
+                      },
+                    },
+                  },
+
+                  // ===== resolution =====
                   resolution_text: {
                     type: "string",
                     nullable: true,
@@ -448,7 +503,7 @@ export const swaggerSpec = {
         responses: {
           200: {
             description:
-              "Customer, Device, Ticket and Resolution created successfully",
+              "Customer, Device, Ticket, Service (optional) and Resolution created successfully",
             content: {
               "application/json": {
                 schema: {
@@ -467,9 +522,17 @@ export const swaggerSpec = {
                       type: "integer",
                       example: 7,
                     },
+                    ticket_id: {
+                      type: "integer",
+                      example: 1001,
+                    },
                     ticket_no: {
                       type: "string",
                       example: "TCK-1735209600000",
+                    },
+                    is_service_case: {
+                      type: "integer",
+                      example: 1,
                     },
                   },
                 },
