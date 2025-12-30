@@ -132,7 +132,7 @@ export async function POST(
       `
       SELECT c.contact_phone
       FROM tickets t
-      JOIN customer c ON c.customer_id = t.customer_id
+      JOIN m_customers c ON c.customer_id = t.customer_id
       WHERE t.ticket_id = ?
       `,
       [ticket_id]
