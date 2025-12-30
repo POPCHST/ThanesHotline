@@ -1129,7 +1129,7 @@ export const swaggerSpec = {
     "/api/tickets/{ticketId}/close": {
       post: {
         summary: "Close ticket and generate satisfaction token",
-        tags: ["Ticket"],
+        tags: ["Rate"],
         parameters: [
           {
             name: "ticketId",

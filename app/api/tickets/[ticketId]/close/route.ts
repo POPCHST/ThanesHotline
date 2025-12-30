@@ -4,7 +4,7 @@
  *   post:
  *     summary: Close ticket and generate satisfaction token
  *     tags:
- *       - Ticket
+ *       - Rate
  *     parameters:
  *       - in: path
  *         name: ticketId
