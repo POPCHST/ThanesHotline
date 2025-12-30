@@ -20,6 +20,9 @@ export function createSmsClient() {
     },
   };
 }
+console.log("TWILIO_ACCOUNT_SID:", process.env.TWILIO_ACCOUNT_SID ? "OK" : "MISSING");
+console.log("TWILIO_FROM:", process.env.TWILIO_FROM);
+
 
 /**
  * helper แปลงเบอร์ไทย → international format
