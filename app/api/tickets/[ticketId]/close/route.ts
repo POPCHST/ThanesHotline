@@ -49,21 +49,23 @@
  *       500:
  *         description: Close ticket failed
  */
-
 import crypto from "crypto";
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export async function POST(
-  req: Request,
-  { params }: { params: { ticketId: string } }
+  req: NextRequest,
+  context: { params: Promise<{ ticketId: string }> }
 ) {
-  const conn = await pool.getConnection();
-  const ticket_id = Number(params.ticketId);
+  const { ticketId } = await context.params;
+  const ticket_id = Number(ticketId);
 
   if (!ticket_id) {
     return NextResponse.json({ message: "invalid ticket id" }, { status: 400 });
   }
+
+  const conn = await pool.getConnection();
 
   try {
     await conn.beginTransaction();
@@ -92,7 +94,7 @@ export async function POST(
     }
 
     // ===============================
-    // 2. เช็คว่ามี satisfaction token แล้วหรือยัง
+    // 2. lock + check satisfaction
     // ===============================
     const [rows]: any = await conn.execute(
       `
@@ -107,7 +109,7 @@ export async function POST(
     let token: string | null = null;
 
     // ===============================
-    // 3. สร้าง satisfaction token (ครั้งเดียว)
+    // 3. create token (once)
     // ===============================
     if (rows.length === 0) {
       token = crypto.randomUUID();
