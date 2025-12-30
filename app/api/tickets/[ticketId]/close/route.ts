@@ -48,11 +48,11 @@
  *
  *       500:
  *         description: Close ticket failed
- */
-import crypto from "crypto";
+ */ import crypto from "crypto";
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { sendSatisfactionSms } from "@/services/sms";
 
 export async function POST(
   req: NextRequest,
@@ -76,9 +76,8 @@ export async function POST(
     const [closeResult]: any = await conn.execute(
       `
       UPDATE tickets
-      SET
-        status_code = 'close',
-        closed_at = NOW()
+      SET status_code = 'close',
+          closed_at = NOW()
       WHERE ticket_id = ?
         AND status_code <> 'close'
       `,
@@ -126,7 +125,37 @@ export async function POST(
       );
     }
 
+    // ===============================
+    // 4. ดึงเบอร์ลูกค้า
+    // ===============================
+    const [[ticket]]: any = await conn.execute(
+      `
+      SELECT c.contact_phone
+      FROM tickets t
+      JOIN customer c ON c.customer_id = t.customer_id
+      WHERE t.ticket_id = ?
+      `,
+      [ticket_id]
+    );
+
+    // ===============================
+    // 5. commit ก่อน
+    // ===============================
     await conn.commit();
+
+    // ===============================
+    // 6. ส่ง SMS (หลัง commit เท่านั้น)
+    // ===============================
+    if (token && ticket?.contact_phone) {
+      const surveyUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/satisfaction?token=${token}`;
+
+      sendSatisfactionSms({
+        phone: ticket.contact_phone,
+        surveyUrl,
+      }).catch((err) => {
+        console.error("SEND SATISFACTION SMS ERROR:", err);
+      });
+    }
 
     return NextResponse.json({
       message: "ticket closed successfully",
