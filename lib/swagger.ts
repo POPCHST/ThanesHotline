@@ -1186,5 +1186,55 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/satisfaction": {
+      post: {
+        summary: "Submit ticket satisfaction score",
+        tags: ["Rate"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["token", "score"],
+                properties: {
+                  token: {
+                    type: "string",
+                    example: "c8f9f7b4-0b4a-4e61-a45c-9cbb0c1e9c31",
+                    description: "token ที่ได้จากการปิด ticket",
+                  },
+                  score: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 5,
+                    example: 5,
+                    description: "คะแนนความพึงพอใจ (1-5)",
+                  },
+                  comment: {
+                    type: "string",
+                    nullable: true,
+                    example: "บริการดีมาก แก้ไขเร็ว",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Satisfaction submitted successfully",
+          },
+          400: {
+            description: "Invalid or expired token",
+          },
+          409: {
+            description: "Score already submitted",
+          },
+          500: {
+            description: "Submit satisfaction failed",
+          },
+        },
+      },
+    },
   },
 };
