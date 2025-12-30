@@ -17,7 +17,8 @@
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-react": "^5.31.0"
+    "swagger-ui-react": "^5.31.0",
+    "twilio": "^5.11.1"
   },
   "devDependencies": {
     "@types/hast": "^3.0.4",

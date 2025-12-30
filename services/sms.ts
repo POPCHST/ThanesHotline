@@ -1,4 +1,3 @@
-// /services/sms.ts
 import { createSmsClient, normalizeThaiPhone } from "@/lib/sms";
 
 interface SendSatisfactionSmsParams {
@@ -6,14 +5,7 @@ interface SendSatisfactionSmsParams {
   surveyUrl: string;
 }
 
-/**
- * SMS client config
- */
-const smsClient = createSmsClient({
-  apiUrl: process.env.SMS_API_URL!,
-  apiKey: process.env.SMS_API_KEY!,
-  sender: process.env.SMS_SENDER ?? "IT-HOTLINE",
-});
+const smsClient = createSmsClient();
 
 export async function sendSatisfactionSms({
   phone,

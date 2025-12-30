@@ -1,40 +1,22 @@
 // /lib/sms.ts
-import axios from "axios";
+import twilio from "twilio";
 
-interface SmsConfig {
-  apiUrl: string;
-  apiKey: string;
-  sender?: string;
-}
+/**
+ * สร้าง Twilio SMS client
+ */
+export function createSmsClient() {
+  const client = twilio(
+    process.env.TWILIO_ACCOUNT_SID!,
+    process.env.TWILIO_AUTH_TOKEN!
+  );
 
-interface SendSmsParams {
-  to: string;        // เบอร์ปลายทาง (+668xxxxxxxx)
-  message: string;   // ข้อความ
-}
-
-export function createSmsClient(config: SmsConfig) {
   return {
-    async send({ to, message }: SendSmsParams) {
-      /**
-       * NOTE:
-       * - เปลี่ยน payload / header ให้ตรงกับ SMS Gateway ที่ใช้จริง
-       * - โค้ดนี้เป็น generic pattern
-       */
-      return axios.post(
-        config.apiUrl,
-        {
-          to,
-          message,
-          sender: config.sender,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${config.apiKey}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 10000,
-        }
-      );
+    async send({ to, message }: { to: string; message: string }) {
+      return client.messages.create({
+        to,
+        from: process.env.TWILIO_FROM!,
+        body: message,
+      });
     },
   };
 }
@@ -54,5 +36,9 @@ export function normalizeThaiPhone(phone: string): string {
     return "+" + cleaned;
   }
 
-  return cleaned;
+  if (cleaned.startsWith("+")) {
+    return cleaned;
+  }
+
+  return "+" + cleaned;
 }
