@@ -1,3 +1,55 @@
+/**
+ * @swagger
+ * /api/tickets/{ticketId}/close:
+ *   post:
+ *     summary: Close ticket and generate satisfaction token
+ *     tags:
+ *       - Ticket
+ *     parameters:
+ *       - in: path
+ *         name: ticketId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 123
+ *         description: ID ของ ticket ที่ต้องการปิด
+ *
+ *     responses:
+ *       200:
+ *         description: Ticket closed successfully and satisfaction token generated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: ticket closed successfully
+ *
+ *                 ticket_id:
+ *                   type: integer
+ *                   example: 123
+ *
+ *                 satisfaction_token:
+ *                   type: string
+ *                   nullable: true
+ *                   example: c8f9f7b4-0b4a-4e61-a45c-9cbb0c1e9c31
+ *
+ *                 survey_url:
+ *                   type: string
+ *                   nullable: true
+ *                   example: https://frontend.example.com/satisfaction?token=c8f9f7b4-0b4a-4e61-a45c-9cbb0c1e9c31
+ *
+ *       400:
+ *         description: Invalid ticket id
+ *
+ *       409:
+ *         description: Ticket already closed or not found
+ *
+ *       500:
+ *         description: Close ticket failed
+ */
+
 import crypto from "crypto";
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
@@ -23,10 +75,10 @@ export async function POST(
       `
       UPDATE tickets
       SET
-        status_code = 'closed',
+        status_code = 'close',
         closed_at = NOW()
       WHERE ticket_id = ?
-        AND status_code <> 'closed'
+        AND status_code <> 'close'
       `,
       [ticket_id]
     );
@@ -47,6 +99,7 @@ export async function POST(
       SELECT satisfaction_id
       FROM ticket_satisfaction
       WHERE ticket_id = ?
+      FOR UPDATE
       `,
       [ticket_id]
     );
