@@ -116,6 +116,7 @@ export async function POST(req: Request) {
       SET
         score = ?,
         comment = ?,
+        is_used = 1,
         rated_at = NOW()
       WHERE satisfaction_token = ?
       `,
