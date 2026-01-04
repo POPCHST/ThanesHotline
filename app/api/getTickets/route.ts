@@ -54,6 +54,9 @@ export async function GET(req: Request) {
         -- Customer
         t.customer_id,
         c.customer_name,
+        c.contact_name,
+        c.customer_ward,
+        c.contact_phone,
 
         -- Device
         t.device_id,
