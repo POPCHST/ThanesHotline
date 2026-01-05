@@ -7,74 +7,6 @@ import pool from "@/lib/db";
  *     summary: Update ticket, customer, device, service and resolution
  *     tags:
  *       - Ticket
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - ticket_no
- *               - updated_by
- *             properties:
- *               ticket_no:
- *                 type: string
- *               customer_name:
- *                 type: string
- *                 nullable: true
- *               customer_ward:
- *                 type: string
- *                 nullable: true
- *               contact_name:
- *                 type: string
- *                 nullable: true
- *               contact_phone:
- *                 type: string
- *                 nullable: true
- *               device_name:
- *                 type: string
- *                 nullable: true
- *               issue_type_id:
- *                 type: integer
- *                 nullable: true
- *               tag_id:
- *                 type: integer
- *                 nullable: true
- *               issue_title:
- *                 type: string
- *                 nullable: true
- *               issue_detail:
- *                 type: string
- *                 nullable: true
- *               priority_code:
- *                 type: string
- *                 nullable: true
- *               impact_level:
- *                 type: string
- *                 nullable: true
- *               urgency_level:
- *                 type: string
- *                 nullable: true
- *               department_id:
- *                 type: integer
- *                 nullable: true
- *               assigned_user_name:
- *                 type: string
- *                 nullable: true
- *               status_code:
- *                 type: string
- *                 nullable: true
- *               service:
- *                 type: object
- *                 nullable: true
- *               resolution_text:
- *                 type: string
- *                 nullable: true
- *               updated_by:
- *                 type: integer
- *               updated_at:
- *                 type: string
- *                 nullable: true
  */
 
 export async function PUT(req: Request) {
@@ -134,11 +66,15 @@ export async function PUT(req: Request) {
     txStarted = true;
 
     // ===============================
-    // find ticket
+    // find ticket (ใช้ DB เป็น source of truth)
     // ===============================
     const [ticketRows]: any = await conn.execute(
       `
-      SELECT ticket_id, customer_id, device_id
+      SELECT
+        ticket_id,
+        customer_id,
+        device_id,
+        is_service_case
       FROM tickets
       WHERE ticket_no = ?
       `,
@@ -149,7 +85,8 @@ export async function PUT(req: Request) {
       throw new Error("TICKET_NOT_FOUND");
     }
 
-    const { ticket_id, customer_id, device_id } = ticketRows[0];
+    const { ticket_id, customer_id, device_id, is_service_case } =
+      ticketRows[0];
 
     // ===============================
     // update customer
@@ -166,9 +103,9 @@ export async function PUT(req: Request) {
         SET
           customer_name = COALESCE(?, customer_name),
           customer_ward = COALESCE(?, customer_ward),
-          contact_name = COALESCE(?, contact_name),
+          contact_name  = COALESCE(?, contact_name),
           contact_phone = COALESCE(?, contact_phone),
-          lastmodify = NOW()
+          lastmodify    = NOW()
         WHERE customer_id = ?
         `,
         [
@@ -190,7 +127,7 @@ export async function PUT(req: Request) {
         UPDATE m_devices
         SET
           device_name = COALESCE(?, device_name),
-          lastmodify = NOW()
+          lastmodify  = NOW()
         WHERE device_id = ?
         `,
         [device_name ?? null, device_id]
@@ -236,9 +173,9 @@ export async function PUT(req: Request) {
     );
 
     // ===============================
-    // upsert service
+    // service (เฉพาะ service case เท่านั้น)
     // ===============================
-    if (service) {
+    if (is_service_case === 1 && service) {
       const {
         service_types,
         work_order_no,
@@ -285,7 +222,16 @@ export async function PUT(req: Request) {
     }
 
     // ===============================
-    // upsert resolution (UPDATE flow)
+    // ถ้าไม่ใช่ service case → ล้าง service ทิ้ง
+    // ===============================
+    if (is_service_case === 0) {
+      await conn.execute(`DELETE FROM ticket_service WHERE ticket_id = ?`, [
+        ticket_id,
+      ]);
+    }
+
+    // ===============================
+    // resolution (UPDATE / UPSERT)
     // ===============================
     if (resolution_text && resolution_text.trim() !== "") {
       await conn.execute(
