@@ -4,7 +4,7 @@ import pool from "@/lib/db";
  * @swagger
  * /api/ticket-update:
  *   put:
- *     summary: Update ticket, customer and device
+ *     summary: Update ticket, customer, device, service and resolution
  *     tags:
  *       - Ticket
  *     requestBody:
@@ -15,23 +15,28 @@ import pool from "@/lib/db";
  *             type: object
  *             required:
  *               - ticket_no
- *               - issue_title
- *               - issue_detail
- *               - department_id
  *               - updated_by
  *             properties:
  *               ticket_no:
  *                 type: string
+ *
  *               customer_name:
  *                 type: string
+ *                 nullable: true
  *               customer_ward:
  *                 type: string
+ *                 nullable: true
  *               contact_name:
  *                 type: string
+ *                 nullable: true
  *               contact_phone:
  *                 type: string
+ *                 nullable: true
+ *
  *               device_name:
  *                 type: string
+ *                 nullable: true
+ *
  *               issue_type_id:
  *                 type: integer
  *                 nullable: true
@@ -40,23 +45,47 @@ import pool from "@/lib/db";
  *                 nullable: true
  *               issue_title:
  *                 type: string
+ *                 nullable: true
  *               issue_detail:
  *                 type: string
+ *                 nullable: true
+ *               priority_code:
+ *                 type: string
+ *                 nullable: true
+ *               impact_level:
+ *                 type: string
+ *                 nullable: true
+ *               urgency_level:
+ *                 type: string
+ *                 nullable: true
  *               department_id:
  *                 type: integer
+ *                 nullable: true
  *               assigned_user_name:
  *                 type: string
+ *                 nullable: true
  *               status_code:
  *                 type: string
+ *                 nullable: true
+ *
+ *               service:
+ *                 type: object
+ *                 nullable: true
+ *
+ *               resolution_text:
+ *                 type: string
+ *                 nullable: true
+ *
  *               updated_by:
  *                 type: integer
  *               updated_at:
  *                 type: string
+ *                 nullable: true
  */
 
 export async function PUT(req: Request) {
   const conn = await pool.getConnection();
-  let isTransactionStarted = false; // 🔑 จุดสำคัญ
+  let txStarted = false;
 
   try {
     const body = await req.json();
@@ -78,9 +107,16 @@ export async function PUT(req: Request) {
       tag_id,
       issue_title,
       issue_detail,
+      priority_code,
+      impact_level,
+      urgency_level,
       department_id,
       assigned_user_name,
       status_code,
+
+      // service / resolution
+      service,
+      resolution_text,
 
       // audit
       updated_by,
@@ -90,13 +126,7 @@ export async function PUT(req: Request) {
     // ===============================
     // validation
     // ===============================
-    if (
-      !ticket_no ||
-      !issue_title ||
-      !issue_detail ||
-      !department_id ||
-      !updated_by
-    ) {
+    if (!ticket_no || !updated_by) {
       return Response.json(
         { message: "missing required fields" },
         { status: 400 }
@@ -104,10 +134,10 @@ export async function PUT(req: Request) {
     }
 
     // ===============================
-    // start transaction
+    // transaction
     // ===============================
     await conn.beginTransaction();
-    isTransactionStarted = true;
+    txStarted = true;
 
     // ===============================
     // find ticket
@@ -128,40 +158,49 @@ export async function PUT(req: Request) {
     const { ticket_id, customer_id, device_id } = ticketRows[0];
 
     // ===============================
-    // update customer
+    // update customer (only if sent)
     // ===============================
-    await conn.execute(
-      `
-      UPDATE m_customers
-      SET
-        customer_name = ?,
-        customer_ward = ?,
-        contact_name = ?,
-        contact_phone = ?,
-        lastmodify = now()
-      WHERE customer_id = ?
-      `,
-      [
-        customer_name ?? null,
-        customer_ward ?? null,
-        contact_name ?? null,
-        contact_phone ?? null,
-        customer_id,
-      ]
-    );
+    if (
+      customer_name !== undefined ||
+      customer_ward !== undefined ||
+      contact_name !== undefined ||
+      contact_phone !== undefined
+    ) {
+      await conn.execute(
+        `
+        UPDATE m_customers
+        SET
+          customer_name = COALESCE(?, customer_name),
+          customer_ward = COALESCE(?, customer_ward),
+          contact_name = COALESCE(?, contact_name),
+          contact_phone = COALESCE(?, contact_phone),
+          lastmodify = NOW()
+        WHERE customer_id = ?
+        `,
+        [
+          customer_name ?? null,
+          customer_ward ?? null,
+          contact_name ?? null,
+          contact_phone ?? null,
+          customer_id,
+        ]
+      );
+    }
 
     // ===============================
     // update device
     // ===============================
-    await conn.execute(
-      `
-      UPDATE m_devices
-      SET device_name = ?,
-      lastmodify = now()
-      WHERE device_id = ?
-      `,
-      [device_name ?? null, device_id]
-    );
+    if (device_name !== undefined) {
+      await conn.execute(
+        `
+        UPDATE m_devices
+        SET device_name = COALESCE(?, device_name),
+            lastmodify = NOW()
+        WHERE device_id = ?
+        `,
+        [device_name ?? null, device_id]
+      );
+    }
 
     // ===============================
     // update ticket
@@ -170,30 +209,102 @@ export async function PUT(req: Request) {
       `
       UPDATE tickets
       SET
-        issue_type_id = ?,
-        tag_id = ?,
-        issue_title = ?,
-        issue_detail = ?,
-        department_id = ?,
-        assigned_user_name = ?,
-        status_code = ?,
-        updated_at = COALESCE(?, NOW()),
-        updated_by = ?
+        issue_type_id      = COALESCE(?, issue_type_id),
+        tag_id             = COALESCE(?, tag_id),
+        issue_title        = COALESCE(?, issue_title),
+        issue_detail       = COALESCE(?, issue_detail),
+        priority_code      = COALESCE(?, priority_code),
+        impact_level       = COALESCE(?, impact_level),
+        urgency_level      = COALESCE(?, urgency_level),
+        department_id      = COALESCE(?, department_id),
+        assigned_user_name = COALESCE(?, assigned_user_name),
+        status_code        = COALESCE(?, status_code),
+        updated_at         = COALESCE(?, NOW()),
+        updated_by         = ?
       WHERE ticket_id = ?
       `,
       [
         issue_type_id ?? null,
         tag_id ?? null,
-        issue_title,
-        issue_detail,
-        department_id,
-        assigned_user_name ?? "",
-        status_code ?? "open",
+        issue_title ?? null,
+        issue_detail ?? null,
+        priority_code ?? null,
+        impact_level ?? null,
+        urgency_level ?? null,
+        department_id ?? null,
+        assigned_user_name ?? null,
+        status_code ?? null,
         updated_at ?? null,
         updated_by,
         ticket_id,
       ]
     );
+
+    // ===============================
+    // upsert service
+    // ===============================
+    if (service) {
+      const {
+        service_types,
+        work_order_no,
+        cost_estimate,
+        serial_before,
+        serial_after,
+        replaced_parts,
+        service_note,
+      } = service;
+
+      await conn.execute(
+        `
+        INSERT INTO ticket_service (
+          ticket_id,
+          service_types,
+          work_order_no,
+          cost_estimate,
+          serial_before,
+          serial_after,
+          replaced_parts,
+          service_note
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          service_types  = VALUES(service_types),
+          work_order_no  = VALUES(work_order_no),
+          cost_estimate  = VALUES(cost_estimate),
+          serial_before  = VALUES(serial_before),
+          serial_after   = VALUES(serial_after),
+          replaced_parts = VALUES(replaced_parts),
+          service_note   = VALUES(service_note)
+        `,
+        [
+          ticket_id,
+          Array.isArray(service_types) ? service_types.join(",") : null,
+          work_order_no ?? null,
+          cost_estimate ?? null,
+          serial_before ?? null,
+          serial_after ?? null,
+          replaced_parts ?? null,
+          service_note ?? null,
+        ]
+      );
+    }
+
+    // ===============================
+    // insert resolution (append)
+    // ===============================
+    if (resolution_text && resolution_text.trim() !== "") {
+      await conn.execute(
+        `
+        INSERT INTO ticket_resolution (
+          ticket_id,
+          resolution_text,
+          resolution_by,
+          resolution_at
+        ) VALUES (?, ?, ?, NOW())
+        `,
+        [ticket_id, resolution_text, updated_by]
+      );
+    }
 
     await conn.commit();
 
@@ -202,13 +313,10 @@ export async function PUT(req: Request) {
       ticket_no,
     });
   } catch (err: any) {
-    // rollback เฉพาะตอนที่ transaction เริ่มแล้ว
-    if (isTransactionStarted) {
+    if (txStarted) {
       try {
         await conn.rollback();
-      } catch (_) {
-        // ignore rollback error
-      }
+      } catch {}
     }
 
     if (err.message === "TICKET_NOT_FOUND") {

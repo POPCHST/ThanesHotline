@@ -1000,7 +1000,7 @@ export const swaggerSpec = {
     },
     "/api/ticket-update": {
       put: {
-        summary: "Update ticket, customer and device",
+        summary: "Update ticket, customer, device, service and resolution",
         tags: ["Ticket"],
         requestBody: {
           required: true,
@@ -1008,13 +1008,7 @@ export const swaggerSpec = {
             "application/json": {
               schema: {
                 type: "object",
-                required: [
-                  "ticket_no",
-                  "issue_title",
-                  "issue_detail",
-                  "department_id",
-                  "updated_by",
-                ],
+                required: ["ticket_no", "updated_by"],
                 properties: {
                   ticket_no: {
                     type: "string",
@@ -1024,24 +1018,29 @@ export const swaggerSpec = {
                   // ===== customer =====
                   customer_name: {
                     type: "string",
+                    nullable: true,
                     example: "ห้องยา ICU",
                   },
                   customer_ward: {
                     type: "string",
+                    nullable: true,
                     example: "ICU",
                   },
                   contact_name: {
                     type: "string",
+                    nullable: true,
                     example: "พยาบาลสมศรี",
                   },
                   contact_phone: {
                     type: "string",
+                    nullable: true,
                     example: "0812345678",
                   },
 
                   // ===== device =====
                   device_name: {
                     type: "string",
+                    nullable: true,
                     example: "เครื่องนับยา YUYAMA",
                   },
 
@@ -1058,23 +1057,87 @@ export const swaggerSpec = {
                   },
                   issue_title: {
                     type: "string",
+                    nullable: true,
                     example: "เครื่องไม่ดูดเม็ดยา",
                   },
                   issue_detail: {
                     type: "string",
+                    nullable: true,
                     example: "ทดสอบแล้วพบว่า sensor ค้าง",
+                  },
+                  priority_code: {
+                    type: "string",
+                    nullable: true,
+                    example: "HIGH",
+                  },
+                  impact_level: {
+                    type: "string",
+                    nullable: true,
+                    example: "HIGH",
+                  },
+                  urgency_level: {
+                    type: "string",
+                    nullable: true,
+                    example: "URGENT",
                   },
                   department_id: {
                     type: "integer",
+                    nullable: true,
                     example: 2,
                   },
                   assigned_user_name: {
                     type: "string",
+                    nullable: true,
                     example: "user2",
                   },
                   status_code: {
                     type: "string",
+                    nullable: true,
                     example: "in_progress",
+                  },
+
+                  // ===== service (optional) =====
+                  service: {
+                    type: "object",
+                    nullable: true,
+                    properties: {
+                      service_types: {
+                        type: "array",
+                        items: { type: "string" },
+                        example: ["repair", "replace"],
+                      },
+                      work_order_no: {
+                        type: "string",
+                        example: "WO-2025-0001",
+                      },
+                      cost_estimate: {
+                        type: "number",
+                        example: 1500,
+                      },
+                      serial_before: {
+                        type: "string",
+                        example: "SN-OLD-1234",
+                      },
+                      serial_after: {
+                        type: "string",
+                        example: "SN-NEW-5678",
+                      },
+                      replaced_parts: {
+                        type: "string",
+                        example: "Motor, Sensor",
+                      },
+                      service_note: {
+                        type: "string",
+                        example: "ติดตั้ง + PM",
+                      },
+                    },
+                  },
+
+                  // ===== resolution (append history) =====
+                  resolution_text: {
+                    type: "string",
+                    nullable: true,
+                    example: "เปลี่ยน sensor และทดสอบเครื่องเรียบร้อย",
                   },
 
                   // ===== audit =====
@@ -1084,6 +1147,7 @@ export const swaggerSpec = {
                   },
                   updated_at: {
                     type: "string",
+                    nullable: true,
                     example: "2025-12-27 15:40",
                     description:
                       "วันที่และเวลาที่แก้ไข (ถ้าไม่ส่งมา ระบบจะใช้เวลาปัจจุบัน)",
@@ -1126,6 +1190,7 @@ export const swaggerSpec = {
         },
       },
     },
+
     "/api/tickets/{ticketId}/close": {
       post: {
         summary: "Close ticket and generate satisfaction token",
