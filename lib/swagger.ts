@@ -1133,11 +1133,12 @@ export const swaggerSpec = {
                     },
                   },
 
-                  // ===== resolution (append history) =====
+                  // ===== resolution (update current resolution) =====
                   resolution_text: {
                     type: "string",
                     nullable: true,
                     example: "เปลี่ยน sensor และทดสอบเครื่องเรียบร้อย",
+                    description: "ผลการแก้ไขล่าสุดของ ticket (update / upsert)",
                   },
 
                   // ===== audit =====

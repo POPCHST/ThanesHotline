@@ -19,7 +19,6 @@ import pool from "@/lib/db";
  *             properties:
  *               ticket_no:
  *                 type: string
- *
  *               customer_name:
  *                 type: string
  *                 nullable: true
@@ -32,11 +31,9 @@ import pool from "@/lib/db";
  *               contact_phone:
  *                 type: string
  *                 nullable: true
- *
  *               device_name:
  *                 type: string
  *                 nullable: true
- *
  *               issue_type_id:
  *                 type: integer
  *                 nullable: true
@@ -67,15 +64,12 @@ import pool from "@/lib/db";
  *               status_code:
  *                 type: string
  *                 nullable: true
- *
  *               service:
  *                 type: object
  *                 nullable: true
- *
  *               resolution_text:
  *                 type: string
  *                 nullable: true
- *
  *               updated_by:
  *                 type: integer
  *               updated_at:
@@ -158,7 +152,7 @@ export async function PUT(req: Request) {
     const { ticket_id, customer_id, device_id } = ticketRows[0];
 
     // ===============================
-    // update customer (only if sent)
+    // update customer
     // ===============================
     if (
       customer_name !== undefined ||
@@ -194,8 +188,9 @@ export async function PUT(req: Request) {
       await conn.execute(
         `
         UPDATE m_devices
-        SET device_name = COALESCE(?, device_name),
-            lastmodify = NOW()
+        SET
+          device_name = COALESCE(?, device_name),
+          lastmodify = NOW()
         WHERE device_id = ?
         `,
         [device_name ?? null, device_id]
@@ -290,7 +285,7 @@ export async function PUT(req: Request) {
     }
 
     // ===============================
-    // insert resolution (append)
+    // upsert resolution (UPDATE flow)
     // ===============================
     if (resolution_text && resolution_text.trim() !== "") {
       await conn.execute(
@@ -300,7 +295,12 @@ export async function PUT(req: Request) {
           resolution_text,
           resolution_by,
           resolution_at
-        ) VALUES (?, ?, ?, NOW())
+        )
+        VALUES (?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE
+          resolution_text = VALUES(resolution_text),
+          resolution_by   = VALUES(resolution_by),
+          resolution_at   = NOW()
         `,
         [ticket_id, resolution_text, updated_by]
       );
