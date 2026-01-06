@@ -92,6 +92,7 @@ export async function GET(req: Request) {
         t.is_service_case,
         t.is_reopen,
         t.reopen_count,
+        t.is_deleted,
 
         -- Dates
         t.opened_at,
