@@ -125,7 +125,7 @@ LEFT JOIN m_users u           ON t.assigned_user_id = u.user_id
 LEFT JOIN m_tags tg           ON t.tag_id = tg.tag_id
 LEFT JOIN m_ticket_status st  ON t.status_code = st.status_code
 
-LEFT JOIN ticket_service s    ON t.ticket_id = s.ticket_id;
+LEFT JOIN ticket_service s    ON t.ticket_id = s.ticket_id
 
   `;
 
