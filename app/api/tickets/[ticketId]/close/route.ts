@@ -48,7 +48,8 @@
  *
  *       500:
  *         description: Close ticket failed
- */ import crypto from "crypto";
+ */
+import crypto from "crypto";
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -56,12 +57,11 @@ import { sendSatisfactionSms } from "@/services/sms";
 
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ ticketId: string }> }
+  { params }: { params: { ticketId: string } }
 ) {
-  const { ticketId } = await context.params;
-  const ticket_id = Number(ticketId);
+  const ticket_id = Number(params.ticketId);
 
-  if (!ticket_id) {
+  if (!ticket_id || Number.isNaN(ticket_id)) {
     return NextResponse.json({ message: "invalid ticket id" }, { status: 400 });
   }
 
@@ -70,9 +70,7 @@ export async function POST(
   try {
     await conn.beginTransaction();
 
-    // ===============================
-    // 1. ปิด ticket
-    // ===============================
+    // 1. close ticket
     const [closeResult]: any = await conn.execute(
       `
       UPDATE tickets
@@ -92,12 +90,10 @@ export async function POST(
       );
     }
 
-    // ===============================
-    // 2. lock + check satisfaction
-    // ===============================
+    // 2. lock satisfaction
     const [rows]: any = await conn.execute(
       `
-      SELECT satisfaction_id
+      SELECT satisfaction_token
       FROM ticket_satisfaction
       WHERE ticket_id = ?
       FOR UPDATE
@@ -107,9 +103,6 @@ export async function POST(
 
     let token: string | null = null;
 
-    // ===============================
-    // 3. create token (once)
-    // ===============================
     if (rows.length === 0) {
       token = crypto.randomUUID();
 
@@ -123,11 +116,11 @@ export async function POST(
         `,
         [ticket_id, token]
       );
+    } else {
+      token = rows[0].satisfaction_token;
     }
 
-    // ===============================
-    // 4. ดึงเบอร์ลูกค้า
-    // ===============================
+    // 3. get phone
     const [[ticket]]: any = await conn.execute(
       `
       SELECT c.contact_phone
@@ -138,22 +131,22 @@ export async function POST(
       [ticket_id]
     );
 
-    // ===============================
-    // 5. commit ก่อน
-    // ===============================
     await conn.commit();
 
-    // ===============================
-    // 6. ส่ง SMS (หลัง commit เท่านั้น)
-    // ===============================
+    // 🔥 DEBUG สำคัญมาก
+    console.log("SATISFACTION SMS DATA:", {
+      ticket_id,
+      phone: ticket?.contact_phone,
+      token,
+    });
+
+    // 4. send SMS
     if (token && ticket?.contact_phone) {
       const surveyUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/satisfaction?token=${token}`;
 
-      sendSatisfactionSms({
-        phone: ticket.contact_phone,
+      await sendSatisfactionSms({
+        phone: ticket.contact_phone.trim(),
         surveyUrl,
-      }).catch((err) => {
-        console.error("SEND SATISFACTION SMS ERROR:", err);
       });
     }
 
