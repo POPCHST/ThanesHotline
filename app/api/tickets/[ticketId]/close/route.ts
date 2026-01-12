@@ -103,19 +103,31 @@ export async function POST(
 
     let token: string | null = null;
 
-    if (rows.length === 0) {
+    if (rows.length === 0 || !rows[0].satisfaction_token) {
       token = crypto.randomUUID();
 
-      await conn.execute(
-        `
-        INSERT INTO ticket_satisfaction (
-          ticket_id,
-          satisfaction_token,
-          expired_at
-        ) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
-        `,
-        [ticket_id, token]
-      );
+      if (rows.length === 0) {
+        await conn.execute(
+          `
+      INSERT INTO ticket_satisfaction (
+        ticket_id,
+        satisfaction_token,
+        expired_at
+      ) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+      `,
+          [ticket_id, token]
+        );
+      } else {
+        await conn.execute(
+          `
+      UPDATE ticket_satisfaction
+      SET satisfaction_token = ?,
+          expired_at = DATE_ADD(NOW(), INTERVAL 7 DAY)
+      WHERE ticket_id = ?
+      `,
+          [token, ticket_id]
+        );
+      }
     } else {
       token = rows[0].satisfaction_token;
     }
