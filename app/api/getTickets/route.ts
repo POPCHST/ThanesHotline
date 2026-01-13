@@ -78,7 +78,11 @@ export async function GET(req: Request) {
 
     -- Assigned user
     t.assigned_user_id,
-    u.full_name AS assigned_user_name,
+    ua.full_name AS assigned_user_name,
+
+    -- Created by
+    t.created_by,
+    uc.full_name AS created_by_name,
 
     -- Tag
     t.tag_id,
@@ -121,7 +125,8 @@ FROM tickets t
 LEFT JOIN m_customers c       ON t.customer_id = c.customer_id
 LEFT JOIN m_devices d         ON t.device_id = d.device_id
 LEFT JOIN m_departments dp    ON t.department_id = dp.department_id
-LEFT JOIN m_users u           ON t.assigned_user_id = u.user_id
+LEFT JOIN m_users ua          ON t.assigned_user_id = ua.user_id
+LEFT JOIN m_users uc          ON t.created_by = uc.user_id
 LEFT JOIN m_tags tg           ON t.tag_id = tg.tag_id
 LEFT JOIN m_ticket_status st  ON t.status_code = st.status_code
 

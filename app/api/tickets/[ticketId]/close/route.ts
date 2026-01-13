@@ -57,11 +57,12 @@ import { sendSatisfactionSms } from "@/services/sms";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { ticketId: string } }
+  context: { params: Promise<{ ticketId: string }> }
 ) {
-  const ticket_id = Number(params.ticketId);
+  const { ticketId } = await context.params;
+  const ticket_id = Number(ticketId);
 
-  if (!ticket_id || Number.isNaN(ticket_id)) {
+  if (!ticket_id) {
     return NextResponse.json({ message: "invalid ticket id" }, { status: 400 });
   }
 
@@ -70,7 +71,9 @@ export async function POST(
   try {
     await conn.beginTransaction();
 
-    // 1. close ticket
+    // ===============================
+    // 1. ปิด ticket
+    // ===============================
     const [closeResult]: any = await conn.execute(
       `
       UPDATE tickets
@@ -90,10 +93,12 @@ export async function POST(
       );
     }
 
-    // 2. lock satisfaction
+    // ===============================
+    // 2. lock + check satisfaction
+    // ===============================
     const [rows]: any = await conn.execute(
       `
-      SELECT satisfaction_token
+      SELECT satisfaction_id
       FROM ticket_satisfaction
       WHERE ticket_id = ?
       FOR UPDATE
@@ -103,36 +108,27 @@ export async function POST(
 
     let token: string | null = null;
 
-    if (rows.length === 0 || !rows[0].satisfaction_token) {
+    // ===============================
+    // 3. create token (once)
+    // ===============================
+    if (rows.length === 0) {
       token = crypto.randomUUID();
 
-      if (rows.length === 0) {
-        await conn.execute(
-          `
-      INSERT INTO ticket_satisfaction (
-        ticket_id,
-        satisfaction_token,
-        expired_at
-      ) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
-      `,
-          [ticket_id, token]
-        );
-      } else {
-        await conn.execute(
-          `
-      UPDATE ticket_satisfaction
-      SET satisfaction_token = ?,
-          expired_at = DATE_ADD(NOW(), INTERVAL 7 DAY)
-      WHERE ticket_id = ?
-      `,
-          [token, ticket_id]
-        );
-      }
-    } else {
-      token = rows[0].satisfaction_token;
+      await conn.execute(
+        `
+        INSERT INTO ticket_satisfaction (
+          ticket_id,
+          satisfaction_token,
+          expired_at
+        ) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+        `,
+        [ticket_id, token]
+      );
     }
 
-    // 3. get phone
+    // ===============================
+    // 4. ดึงเบอร์ลูกค้า
+    // ===============================
     const [[ticket]]: any = await conn.execute(
       `
       SELECT c.contact_phone
@@ -143,22 +139,22 @@ export async function POST(
       [ticket_id]
     );
 
+    // ===============================
+    // 5. commit ก่อน
+    // ===============================
     await conn.commit();
 
-    // 🔥 DEBUG สำคัญมาก
-    console.log("SATISFACTION SMS DATA:", {
-      ticket_id,
-      phone: ticket?.contact_phone,
-      token,
-    });
-
-    // 4. send SMS
+    // ===============================
+    // 6. ส่ง SMS (หลัง commit เท่านั้น)
+    // ===============================
     if (token && ticket?.contact_phone) {
       const surveyUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/satisfaction?token=${token}`;
 
-      await sendSatisfactionSms({
-        phone: ticket.contact_phone.trim(),
+      sendSatisfactionSms({
+        phone: ticket.contact_phone,
         surveyUrl,
+      }).catch((err) => {
+        console.error("SEND SATISFACTION SMS ERROR:", err);
       });
     }
 
