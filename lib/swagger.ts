@@ -169,7 +169,7 @@ export const swaggerSpec = {
             "application/x-www-form-urlencoded": {
               schema: {
                 type: "object",
-                required: ["username", "password", "department_id"],
+                required: ["username", "password"],
                 properties: {
                   username: {
                     type: "string",
@@ -178,10 +178,6 @@ export const swaggerSpec = {
                   password: {
                     type: "string",
                     example: "123456",
-                  },
-                  department_id: {
-                    type: "integer",
-                    example: 10,
                   },
                 },
               },
@@ -244,7 +240,7 @@ export const swaggerSpec = {
           },
 
           400: {
-            description: "username, password and department_id are required",
+            description: "username and password are required",
             content: {
               "application/json": {
                 schema: {
@@ -252,8 +248,7 @@ export const swaggerSpec = {
                   properties: {
                     message: {
                       type: "string",
-                      example:
-                        "username, password and department_id are required",
+                      example: "username and password are required",
                     },
                   },
                 },
@@ -287,7 +282,7 @@ export const swaggerSpec = {
                   properties: {
                     message: {
                       type: "string",
-                      example: "Department is inactive",
+                      example: "User or department inactive",
                     },
                   },
                 },
