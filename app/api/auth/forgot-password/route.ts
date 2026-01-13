@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     [username]
   );
 
-  // ไม่เปิดเผยข้อมูล user
+  // ❗ security: ไม่บอกว่ามี user หรือไม่
   if (rows.length === 0) {
     return Response.json({
       message: "หากมีผู้ใช้งาน ระบบจะติดต่อกลับ",
@@ -35,11 +35,22 @@ export async function POST(req: Request) {
     .replace("T", " ");
 
   await pool.query(
-    `UPDATE m_users SET reset_token=?, reset_token_expired=? WHERE user_id=?`,
+    `UPDATE m_users
+     SET reset_token=?, reset_token_expired=?
+     WHERE user_id=?`,
     [token, expired, rows[0].user_id]
   );
 
+  // ✅ คุมการ return token
+  const allowReturnToken =
+    process.env.RETURN_RESET_TOKEN === "true" ||
+    process.env.NODE_ENV !== "production";
+
   return Response.json({
     message: "สร้างคำขอรีเซ็ตรหัสผ่านเรียบร้อย",
+    ...(allowReturnToken && {
+      reset_token: token,
+      expires_at: expired,
+    }),
   });
 }
