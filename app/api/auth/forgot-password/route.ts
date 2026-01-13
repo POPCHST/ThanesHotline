@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     message: "สร้างคำขอรีเซ็ตรหัสผ่านเรียบร้อย",
     ...(allowReturnToken && {
       reset_token: token,
-      expires_at: expired,
+      // expires_at: expired,
     }),
   });
 }
