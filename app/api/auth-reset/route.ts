@@ -1,6 +1,6 @@
 /**
  * @swagger
- * /api/auth-reset/reset-password:
+ * /api/auth/reset-password:
  *   post:
  *     summary: Reset password
  *     tags: [Auth]

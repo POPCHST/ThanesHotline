@@ -1361,7 +1361,7 @@ export const swaggerSpec = {
         },
       },
     },
-    "/api/auth-reset/reset-password": {
+    "/api/auth/reset-password": {
       post: {
         summary: "Reset password using reset token",
         tags: ["Auth"],
