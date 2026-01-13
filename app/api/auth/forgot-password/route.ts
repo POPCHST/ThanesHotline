@@ -47,7 +47,7 @@ export async function POST(req: Request) {
   // ✅ คุมการ return token
   const allowReturnToken =
     process.env.RETURN_RESET_TOKEN === "true" ||
-    process.env.NODE_ENV !== "production";
+    process.env.NODE_ENV === "production";
 
   return Response.json({
     message: "สร้างคำขอรีเซ็ตรหัสผ่านเรียบร้อย",
