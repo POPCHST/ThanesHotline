@@ -17,6 +17,7 @@ export async function GET() {
       user_id,
       username,
       full_name,
+      password,
       role_id,
       department_id,
       is_active,
