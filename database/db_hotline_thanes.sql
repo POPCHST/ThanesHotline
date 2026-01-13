@@ -11,7 +11,7 @@
  Target Server Version : 101110 (10.11.10-MariaDB)
  File Encoding         : 65001
 
- Date: 30/12/2025 12:06:19
+ Date: 13/01/2026 17:23:56
 */
 
 SET NAMES utf8mb4;
@@ -29,7 +29,7 @@ CREATE TABLE `m_customers`  (
   `contact_phone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `lastmodify` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`customer_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for m_departments
@@ -54,7 +54,7 @@ CREATE TABLE `m_devices`  (
   `serial_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `lastmodify` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`device_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for m_issue_categories
@@ -116,6 +116,7 @@ DROP TABLE IF EXISTS `m_tags`;
 CREATE TABLE `m_tags`  (
   `tag_id` int NOT NULL AUTO_INCREMENT,
   `tag_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `is_active` int NULL DEFAULT NULL,
   PRIMARY KEY (`tag_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
@@ -127,6 +128,7 @@ CREATE TABLE `m_ticket_status`  (
   `status_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `status_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `status_order` int NULL DEFAULT NULL,
+  `is_active` int NULL DEFAULT NULL,
   PRIMARY KEY (`status_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
@@ -138,6 +140,7 @@ CREATE TABLE `m_ticket_status_service`  (
   `status_sv_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `status_sv_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `status_sv_order` int NULL DEFAULT NULL,
+  `is_active` int NULL DEFAULT NULL,
   PRIMARY KEY (`status_sv_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
@@ -154,8 +157,10 @@ CREATE TABLE `m_users`  (
   `department_id` int NULL DEFAULT NULL,
   `is_active` tinyint(1) NULL DEFAULT 1,
   `created_at` datetime NOT NULL DEFAULT current_timestamp,
+  `reset_token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'token สำหรับรีเซ็ตรหัสผ่าน',
+  `reset_token_expired` datetime NULL DEFAULT NULL COMMENT 'วันหมดอายุ token',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for ticket_attachments
@@ -211,8 +216,9 @@ CREATE TABLE `ticket_resolution`  (
   `resolution_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
   `resolution_by` int NULL DEFAULT NULL,
   `resolution_at` datetime NULL DEFAULT current_timestamp,
-  PRIMARY KEY (`resolution_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+  PRIMARY KEY (`resolution_id`) USING BTREE,
+  UNIQUE INDEX `uq_ticket_resolution_ticket`(`ticket_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 41 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for ticket_satisfaction
@@ -231,7 +237,7 @@ CREATE TABLE `ticket_satisfaction`  (
   PRIMARY KEY (`satisfaction_id`) USING BTREE,
   UNIQUE INDEX `uk_token`(`satisfaction_token` ASC) USING BTREE,
   INDEX `idx_ticket_id`(`ticket_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'คะแนนความพึงพอใจหลังปิดงาน' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'คะแนนความพึงพอใจหลังปิดงาน' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for ticket_service
@@ -250,8 +256,9 @@ CREATE TABLE `ticket_service`  (
   `created_at` datetime NOT NULL DEFAULT current_timestamp COMMENT 'เวลาสร้างข้อมูล service',
   `updated_at` datetime NOT NULL DEFAULT current_timestamp ON UPDATE CURRENT_TIMESTAMP COMMENT 'เวลาปรับปรุงข้อมูลล่าสุด',
   PRIMARY KEY (`service_id`) USING BTREE,
+  UNIQUE INDEX `uq_ticket_service_ticket`(`ticket_id` ASC) USING BTREE,
   INDEX `idx_ticket_id`(`ticket_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'ข้อมูลเฉพาะของ Ticket Service' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'ข้อมูลเฉพาะของ Ticket Service' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for ticket_sla_tracking
@@ -312,6 +319,6 @@ CREATE TABLE `tickets`  (
   `deleted_by` int NULL DEFAULT NULL,
   PRIMARY KEY (`ticket_id`) USING BTREE,
   UNIQUE INDEX `ticket_no`(`ticket_no` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 34 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
