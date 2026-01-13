@@ -1302,5 +1302,127 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/auth/forgot-password": {
+      post: {
+        summary: "Request password reset (Forgot password)",
+        tags: ["Auth"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/x-www-form-urlencoded": {
+              schema: {
+                type: "object",
+                required: ["username"],
+                properties: {
+                  username: {
+                    type: "string",
+                    example: "admin",
+                    description: "Username ที่ต้องการขอรีเซ็ตรหัสผ่าน",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Request accepted (do not reveal user existence)",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example:
+                        "หากมีผู้ใช้งานในระบบ จะได้รับการติดต่อจากผู้ดูแล",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "username is required",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "username is required",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/auth-reset/reset-password": {
+      post: {
+        summary: "Reset password using reset token",
+        tags: ["Auth"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/x-www-form-urlencoded": {
+              schema: {
+                type: "object",
+                required: ["token", "new_password"],
+                properties: {
+                  token: {
+                    type: "string",
+                    example: "a8f9c3e9d12a4f...",
+                    description: "Reset token ที่ได้จาก forgot-password",
+                  },
+                  new_password: {
+                    type: "string",
+                    example: "123456",
+                    description: "รหัสผ่านใหม่ (จะถูก hash ก่อนบันทึก)",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Password reset successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ตั้งรหัสผ่านใหม่เรียบร้อย",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid or expired token",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "token ไม่ถูกต้องหรือหมดอายุแล้ว",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 };
