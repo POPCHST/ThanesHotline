@@ -21,7 +21,9 @@ export async function GET() {
       role_id,
       department_id,
       is_active,
-      CONVERT_TZ(created_at, '+00:00', '+07:00') AS created_at
+      CONVERT_TZ(created_at, '+00:00', '+07:00') AS created_at,
+      reset_token,
+      reset_token_expired
     FROM m_users
   `);
 
