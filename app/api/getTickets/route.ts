@@ -160,7 +160,7 @@ LEFT JOIN ticket_service s    ON t.ticket_id = s.ticket_id
   }
 
   // ===== order =====
-  sql += ` ORDER BY t.created_at ASC`;
+  sql += ` ORDER BY t.created_at DESC`;
 
   const [rows] = await pool.query(sql, params);
 
