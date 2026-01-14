@@ -152,7 +152,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    console.log("REQUEST BODY:", body);
+    // console.log("REQUEST BODY:", body);
 
     // ===============================
     // customer
@@ -298,7 +298,7 @@ export async function POST(req: Request) {
         created_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, 0, 0, NOW(), ?, COALESCE(?, NOW())
+        ?, 0, 0, NOW(), ?, now())
       )
       `,
       [
