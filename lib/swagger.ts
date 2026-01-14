@@ -1101,10 +1101,10 @@ export const swaggerSpec = {
                         items: { type: "string" },
                         example: ["repair", "replace"],
                       },
-                      work_order_no: {
-                        type: "string",
-                        example: "WO-2025-0001",
-                      },
+                      // work_order_no: {
+                      //   type: "string",
+                      //   example: "WO-2025-0001",
+                      // },
                       cost_estimate: {
                         type: "number",
                         example: 1500,
