@@ -298,7 +298,7 @@ export async function POST(req: Request) {
         created_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, 0, 0, NOW(), ?, now())
+        ?, 0, 0, NOW(), ?, COALESCE(?, NOW())
       )
       `,
       [
