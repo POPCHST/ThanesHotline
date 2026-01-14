@@ -1419,5 +1419,124 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/tickets/{ticket_no}/reopen": {
+      put: {
+        summary: "Reopen closed ticket",
+        description:
+          "Reopen a ticket that has been closed. " +
+          "All business logic is handled by the backend, including state validation, " +
+          "status transition from close to open, incrementing reopen count, " +
+          "and resetting closed/resolved timestamps. " +
+          "Client only needs to trigger this action.",
+        tags: ["Ticket"],
+        parameters: [
+          {
+            name: "ticket_no",
+            in: "path",
+            required: true,
+            schema: {
+              type: "string",
+            },
+            example: "TCK-1766819708852",
+            description: "Ticket number to reopen",
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["updated_by"],
+                properties: {
+                  updated_by: {
+                    type: "integer",
+                    example: 12,
+                    description:
+                      "User ID who triggers the reopen action (used for audit)",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Ticket reopened successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket reopened successfully",
+                    },
+                    ticket_no: {
+                      type: "string",
+                      example: "TCK-1766819708852",
+                    },
+                    reopen_count: {
+                      type: "integer",
+                      example: 2,
+                      description:
+                        "Total number of times this ticket has been reopened",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Ticket is not closed or missing required fields",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket is not closed",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "Ticket not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket not found",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Reopen ticket failed",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "reopen ticket failed",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 };
