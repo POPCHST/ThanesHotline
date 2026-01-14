@@ -117,7 +117,6 @@ export async function PUT(
         updated_at    = NOW()
       WHERE ticket_id = ?
         AND status_code = 'close'
-        AND is_deleted = 0
       `,
       [updated_by, ticket_id]
     );
