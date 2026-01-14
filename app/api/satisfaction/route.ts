@@ -53,17 +53,44 @@
  *       500:
  *         description: Submit satisfaction failed
  */
-
 import pool from "@/lib/db";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+const ALLOWED_ORIGIN = "https://smsotp-hotline.vercel.app";
+
+/* =========================
+   ✅ CORS Preflight
+========================= */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
+
+/* =========================
+   ✅ POST Handler
+========================= */
+export async function POST(req: NextRequest) {
   const { token, score, comment } = await req.json();
+
   // ===============================
   // validation
   // ===============================
   if (!token || !score || score < 1 || score > 5) {
-    return NextResponse.json({ message: "invalid input" }, { status: 400 });
+    return NextResponse.json(
+      { message: "invalid input" },
+      {
+        status: 400,
+        headers: {
+          "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+        },
+      }
+    );
   }
 
   const conn = await pool.getConnection();
@@ -71,9 +98,6 @@ export async function POST(req: Request) {
   try {
     await conn.beginTransaction();
 
-    // ===============================
-    // lock satisfaction row
-    // ===============================
     const [rows]: any = await conn.execute(
       `
       SELECT satisfaction_id, score, expired_at
@@ -86,30 +110,45 @@ export async function POST(req: Request) {
 
     if (rows.length === 0) {
       await conn.rollback();
-      return NextResponse.json({ message: "invalid token" }, { status: 400 });
+      return NextResponse.json(
+        { message: "invalid token" },
+        {
+          status: 400,
+          headers: {
+            "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+          },
+        }
+      );
     }
 
     const row = rows[0];
 
-    // ===============================
-    // already rated
-    // ===============================
     if (row.score !== null) {
       await conn.rollback();
-      return NextResponse.json({ message: "already rated" }, { status: 409 });
+      return NextResponse.json(
+        { message: "already rated" },
+        {
+          status: 409,
+          headers: {
+            "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+          },
+        }
+      );
     }
 
-    // ===============================
-    // token expired
-    // ===============================
     if (new Date(row.expired_at) < new Date()) {
       await conn.rollback();
-      return NextResponse.json({ message: "token expired" }, { status: 400 });
+      return NextResponse.json(
+        { message: "token expired" },
+        {
+          status: 400,
+          headers: {
+            "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+          },
+        }
+      );
     }
 
-    // ===============================
-    // update score
-    // ===============================
     await conn.execute(
       `
       UPDATE ticket_satisfaction
@@ -125,16 +164,26 @@ export async function POST(req: Request) {
 
     await conn.commit();
 
-    return NextResponse.json({
-      message: "satisfaction submitted successfully",
-    });
+    return NextResponse.json(
+      { message: "satisfaction submitted successfully" },
+      {
+        headers: {
+          "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+        },
+      }
+    );
   } catch (err) {
     await conn.rollback();
     console.error("SATISFACTION ERROR:", err);
 
     return NextResponse.json(
-      { message: "submit failed", error: String(err) },
-      { status: 500 }
+      { message: "submit failed" },
+      {
+        status: 500,
+        headers: {
+          "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+        },
+      }
     );
   } finally {
     conn.release();
