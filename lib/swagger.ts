@@ -1419,7 +1419,7 @@ export const swaggerSpec = {
         },
       },
     },
-    "/api/tickets/{ticket_no}/reopen": {
+    "/api/tickets/{ticketId}/reopen": {
       put: {
         summary: "Reopen closed ticket",
         description:
@@ -1431,14 +1431,14 @@ export const swaggerSpec = {
         tags: ["Ticket"],
         parameters: [
           {
-            name: "ticket_no",
+            name: "ticketId",
             in: "path",
             required: true,
             schema: {
-              type: "string",
+              type: "integer",
             },
-            example: "TCK-1766819708852",
-            description: "Ticket number to reopen",
+            example: 123,
+            description: "Ticket ID to reopen",
           },
         ],
         requestBody: {
@@ -1472,9 +1472,9 @@ export const swaggerSpec = {
                       type: "string",
                       example: "ticket reopened successfully",
                     },
-                    ticket_no: {
-                      type: "string",
-                      example: "TCK-1766819708852",
+                    ticket_id: {
+                      type: "integer",
+                      example: 123,
                     },
                     reopen_count: {
                       type: "integer",

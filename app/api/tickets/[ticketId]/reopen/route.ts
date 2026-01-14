@@ -1,26 +1,24 @@
 /**
  * @swagger
- * /api/tickets/{ticket_no}/reopen:
+ * /api/tickets/{ticketId}/reopen:
  *   put:
  *     summary: Reopen a closed ticket
  *     description: >
- *       Reopen a ticket that is already closed.
- *       The backend will automatically handle all business logic:
+ *       Reopen a ticket that has already been closed.
+ *       The backend automatically handles all business logic including
  *       validating ticket state, changing status from `close` to `open`,
- *       marking the ticket as reopened, incrementing reopen count,
- *       and resetting closed/resolved timestamps.
- *
+ *       incrementing reopen count, and resetting closed/resolved timestamps.
  *       The client only needs to trigger this action.
  *     tags:
  *       - Ticket
  *     parameters:
  *       - in: path
- *         name: ticket_no
+ *         name: ticketId
  *         required: true
  *         schema:
- *           type: string
- *         description: Ticket number to reopen
- *         example: TCK-20260101-0001
+ *           type: integer
+ *         description: Ticket ID to reopen
+ *         example: 123
  *     requestBody:
  *       required: true
  *       content:
@@ -45,59 +43,35 @@
  *                 message:
  *                   type: string
  *                   example: ticket reopened successfully
- *                 ticket_no:
- *                   type: string
- *                   example: TCK-20260101-0001
+ *                 ticket_id:
+ *                   type: integer
+ *                   example: 123
  *                 reopen_count:
  *                   type: integer
  *                   example: 2
  *       400:
  *         description: Ticket is not in a closed state or request is invalid
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: ticket is not closed
  *       404:
  *         description: Ticket not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: ticket not found
  *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: reopen ticket failed
+ *         description: Reopen ticket failed
  */
 
 import pool from "@/lib/db";
 
 export async function PUT(
   req: Request,
-  { params }: { params: { ticket_no: string } }
+  { params }: { params: { ticketId: string } }
 ) {
   const conn = await pool.getConnection();
   let tx = false;
 
   try {
-    const { ticket_no } = params;
+    const { ticketId } = params;
     const body = await req.json();
     const { updated_by } = body;
 
-    if (!ticket_no || !updated_by) {
+    if (!ticketId || !updated_by) {
       return Response.json(
         { message: "missing required fields" },
         { status: 400 }
@@ -110,12 +84,13 @@ export async function PUT(
     // เช็กสถานะก่อน
     const [rows]: any = await conn.execute(
       `
-      SELECT status_code, reopen_count
-      FROM tickets
-      WHERE ticket_no = ?
-        AND is_deleted = 0
-      `,
-      [ticket_no]
+  SELECT status_code, reopen_count
+  FROM tickets
+  WHERE ticket_id = ?
+    AND is_deleted = 0
+  FOR UPDATE
+  `,
+      [ticketId]
     );
 
     if (!rows.length) {
@@ -132,20 +107,20 @@ export async function PUT(
     // Reopen
     const [result]: any = await conn.execute(
       `
-      UPDATE tickets
-      SET
-        status_code   = 'open',
-        is_reopen     = 1,
-        reopen_count  = reopen_count + 1,
-        resolved_at   = NULL,
-        closed_at     = NULL,
-        updated_by    = ?,
-        updated_at    = NOW()
-      WHERE ticket_no = ?
-        AND status_code = 'close'
-        AND is_deleted = 0
-      `,
-      [updated_by, ticket_no]
+  UPDATE tickets
+  SET
+    status_code   = 'open',
+    is_reopen     = 1,
+    reopen_count  = reopen_count + 1,
+    resolved_at   = NULL,
+    closed_at     = NULL,
+    updated_by    = ?,
+    updated_at    = NOW()
+  WHERE ticket_id = ?
+    AND status_code = 'close'
+    AND is_deleted = 0
+  `,
+      [updated_by, ticketId]
     );
 
     if (result.affectedRows === 0) {
@@ -156,7 +131,7 @@ export async function PUT(
 
     return Response.json({
       message: "ticket reopened successfully",
-      ticket_no,
+      ticket_id: ticketId,
       reopen_count: rows[0].reopen_count + 1,
     });
   } catch (err: any) {
