@@ -83,13 +83,11 @@ export async function PUT(
     await conn.beginTransaction();
     tx = true;
 
-    // 🔒 lock row
     const [rows]: any = await conn.execute(
       `
       SELECT status_code, reopen_count
       FROM tickets
       WHERE ticket_id = ?
-        AND is_deleted = 0
       FOR UPDATE
       `,
       [ticket_id]
