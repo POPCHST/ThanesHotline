@@ -56,22 +56,24 @@
  *       500:
  *         description: Reopen ticket failed
  */
-
+import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { ticketId: string } }
+  request: NextRequest,
+  context: { params: Promise<{ ticketId: string }> }
 ) {
   const conn = await pool.getConnection();
   let tx = false;
 
   try {
-    const { ticketId } = params;
-    const body = await req.json();
+    const { ticketId } = await context.params;
+    const body = await request.json();
     const { updated_by } = body;
 
-    if (!ticketId || !updated_by) {
+    const ticket_id = Number(ticketId);
+
+    if (!ticket_id || !updated_by) {
       return Response.json(
         { message: "missing required fields" },
         { status: 400 }
@@ -81,16 +83,16 @@ export async function PUT(
     await conn.beginTransaction();
     tx = true;
 
-    // เช็กสถานะก่อน
+    // 🔒 lock row
     const [rows]: any = await conn.execute(
       `
-  SELECT status_code, reopen_count
-  FROM tickets
-  WHERE ticket_id = ?
-    AND is_deleted = 0
-  FOR UPDATE
-  `,
-      [ticketId]
+      SELECT status_code, reopen_count
+      FROM tickets
+      WHERE ticket_id = ?
+        AND is_deleted = 0
+      FOR UPDATE
+      `,
+      [ticket_id]
     );
 
     if (!rows.length) {
@@ -104,23 +106,22 @@ export async function PUT(
       );
     }
 
-    // Reopen
     const [result]: any = await conn.execute(
       `
-  UPDATE tickets
-  SET
-    status_code   = 'open',
-    is_reopen     = 1,
-    reopen_count  = reopen_count + 1,
-    resolved_at   = NULL,
-    closed_at     = NULL,
-    updated_by    = ?,
-    updated_at    = NOW()
-  WHERE ticket_id = ?
-    AND status_code = 'close'
-    AND is_deleted = 0
-  `,
-      [updated_by, ticketId]
+      UPDATE tickets
+      SET
+        status_code   = 'open',
+        is_reopen     = 1,
+        reopen_count  = reopen_count + 1,
+        resolved_at   = NULL,
+        closed_at     = NULL,
+        updated_by    = ?,
+        updated_at    = NOW()
+      WHERE ticket_id = ?
+        AND status_code = 'close'
+        AND is_deleted = 0
+      `,
+      [updated_by, ticket_id]
     );
 
     if (result.affectedRows === 0) {
@@ -131,7 +132,7 @@ export async function PUT(
 
     return Response.json({
       message: "ticket reopened successfully",
-      ticket_id: ticketId,
+      ticket_id,
       reopen_count: rows[0].reopen_count + 1,
     });
   } catch (err: any) {
