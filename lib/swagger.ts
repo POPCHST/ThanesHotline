@@ -400,6 +400,7 @@ export const swaggerSpec = {
                     type: "string",
                     example: "เครื่องนับยาไม่ดูดเม็ดยา",
                   },
+
                   issue_detail: {
                     type: "string",
                     example: "เครื่องหยุดทำงานหลังเปิด 5 นาที",
@@ -424,6 +425,11 @@ export const swaggerSpec = {
                   department_id: {
                     type: "integer",
                     example: 2,
+                  },
+
+                  assigned_user_id: {
+                    type: "integer",
+                    example: 6,
                   },
 
                   assigned_user_name: {
