@@ -1,4 +1,5 @@
 import pool from "@/lib/db";
+import { generateWorkOrderNo } from "@/services/service-workorder";
 
 /**
  * @swagger
@@ -178,7 +179,6 @@ export async function PUT(req: Request) {
     if (is_service_case === 1 && service) {
       const {
         service_types,
-        work_order_no,
         cost_estimate,
         serial_before,
         serial_after,
@@ -186,32 +186,42 @@ export async function PUT(req: Request) {
         service_note,
       } = service;
 
+      // เช็คว่ามี service อยู่แล้วหรือยัง
+      const [exist]: any = await conn.execute(
+        `SELECT work_order_no FROM ticket_service WHERE ticket_id = ?`,
+        [ticket_id]
+      );
+
+      // ถ้ามีแล้วใช้เลขเดิม / ถ้ายังไม่มีให้ gen ใหม่
+      const workOrderNo = exist.length
+        ? exist[0].work_order_no
+        : await generateWorkOrderNo(conn);
+
       await conn.execute(
         `
-        INSERT INTO ticket_service (
-          ticket_id,
-          service_types,
-          work_order_no,
-          cost_estimate,
-          serial_before,
-          serial_after,
-          replaced_parts,
-          service_note
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          service_types  = VALUES(service_types),
-          work_order_no  = VALUES(work_order_no),
-          cost_estimate  = VALUES(cost_estimate),
-          serial_before  = VALUES(serial_before),
-          serial_after   = VALUES(serial_after),
-          replaced_parts = VALUES(replaced_parts),
-          service_note   = VALUES(service_note)
-        `,
+    INSERT INTO ticket_service (
+      ticket_id,
+      service_types,
+      work_order_no,
+      cost_estimate,
+      serial_before,
+      serial_after,
+      replaced_parts,
+      service_note
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      service_types  = VALUES(service_types),
+      cost_estimate  = VALUES(cost_estimate),
+      serial_before  = VALUES(serial_before),
+      serial_after   = VALUES(serial_after),
+      replaced_parts = VALUES(replaced_parts),
+      service_note   = VALUES(service_note)
+    `,
         [
           ticket_id,
           Array.isArray(service_types) ? service_types.join(",") : null,
-          work_order_no ?? null,
+          workOrderNo,
           cost_estimate ?? null,
           serial_before ?? null,
           serial_after ?? null,
