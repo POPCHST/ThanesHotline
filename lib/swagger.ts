@@ -1560,6 +1560,7 @@ export const swaggerSpec = {
       get: {
         summary: "Get latest notifications of current user",
         tags: ["Notification"],
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "List of notifications",
@@ -1617,6 +1618,7 @@ export const swaggerSpec = {
       get: {
         summary: "Get unread notification count of current user",
         tags: ["Notification"],
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "Unread notification count",
@@ -1645,6 +1647,7 @@ export const swaggerSpec = {
       put: {
         summary: "Mark all notifications as read for current user",
         tags: ["Notification"],
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "All notifications marked as read",

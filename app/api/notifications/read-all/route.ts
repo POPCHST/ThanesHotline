@@ -28,25 +28,21 @@ export async function PUT(req: Request) {
   const conn = await pool.getConnection();
 
   try {
-    // 1️⃣ อ่าน Authorization header
     const auth = req.headers.get("authorization");
     if (!auth || !auth.startsWith("Bearer ")) {
       return Response.json({ message: "unauthorized" }, { status: 401 });
     }
 
-    // 2️⃣ แยก token
     const token = auth.replace("Bearer ", "");
 
-    // 3️⃣ verify JWT
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
 
-    const userId = decoded.user_id; // 🔥 ตัวเดียวกับ DB
+    const userId = decoded.user_id;
 
     if (!userId) {
       return Response.json({ message: "unauthorized" }, { status: 401 });
     }
 
-    // 4️⃣ update
     await conn.execute(
       `
       UPDATE notifications
