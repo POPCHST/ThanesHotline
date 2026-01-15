@@ -1671,5 +1671,70 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/tickets/{ticketId}": {
+      get: {
+        summary: "Get ticket detail by ID",
+        tags: ["Ticket"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "ticketId",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+            example: 51,
+            description: "Ticket ID",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Ticket detail",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    ticket_id: { type: "integer", example: 51 },
+                    ticket_no: {
+                      type: "string",
+                      example: "TCK-1768446030607",
+                    },
+                    issue_title: { type: "string" },
+                    issue_detail: { type: "string" },
+                    priority_code: { type: "string" },
+                    impact_level: { type: "string" },
+                    urgency_level: { type: "string" },
+                    status_code: { type: "string" },
+                    assigned_user_name: { type: "string" },
+                    created_at: {
+                      type: "string",
+                      example: "2026-01-15 10:00:31",
+                    },
+
+                    customer_name: { type: "string" },
+                    customer_ward: { type: "string" },
+                    contact_name: { type: "string" },
+                    contact_phone: { type: "string" },
+
+                    device_name: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid ticket id",
+          },
+          404: {
+            description: "Ticket not found",
+          },
+          401: {
+            description: "Unauthorized",
+          },
+        },
+      },
+    },
   },
 };
