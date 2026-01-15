@@ -78,7 +78,7 @@
  *               department_id:
  *                 type: integer
  *                 example: 2
- * 
+ *
  *              assigned_user_id:
  *                 type: integer
  *                 example: 2
@@ -324,6 +324,32 @@ export async function POST(req: Request) {
 
     const ticket_id = ticketResult.insertId;
     if (!ticket_id) throw new Error("ticket insert failed");
+
+    try {
+      if (assigned_user_id && Number(assigned_user_id) > 0) {
+        await conn.execute(
+          `
+      INSERT INTO notifications (
+        user_id,
+        type,
+        ref_type,
+        ref_id,
+        title,
+        message,
+        created_at
+      ) VALUES (?, 'assign_ticket', 'ticket', ?, ?, ?, NOW())
+      `,
+          [
+            assigned_user_id,
+            ticket_id,
+            "มีงานใหม่ถูกมอบหมาย",
+            `คุณได้รับมอบหมายงาน Ticket #${ticket_no}`,
+          ]
+        );
+      }
+    } catch (e) {
+      console.warn("AUTO notification failed:", e);
+    }
 
     // ===============================
     // INSERT ticket_service (เฉพาะ Service)
