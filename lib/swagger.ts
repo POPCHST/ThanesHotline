@@ -37,6 +37,15 @@ export const swaggerSpec = {
   //     description: "API server",
   //   },
   // ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+      },
+    },
+  },
   paths: {
     "/api/customers": {
       get: {
