@@ -21,18 +21,32 @@
  *       401:
  *         description: Unauthorized
  */
-
 import pool from "@/lib/db";
+import jwt from "jsonwebtoken";
 
 export async function PUT(req: Request) {
   const conn = await pool.getConnection();
 
   try {
-    const userId = (req as any).user?.user_id;
+    // 1️⃣ อ่าน Authorization header
+    const auth = req.headers.get("authorization");
+    if (!auth || !auth.startsWith("Bearer ")) {
+      return Response.json({ message: "unauthorized" }, { status: 401 });
+    }
+
+    // 2️⃣ แยก token
+    const token = auth.replace("Bearer ", "");
+
+    // 3️⃣ verify JWT
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+
+    const userId = decoded.user_id; // 🔥 ตัวเดียวกับ DB
+
     if (!userId) {
       return Response.json({ message: "unauthorized" }, { status: 401 });
     }
 
+    // 4️⃣ update
     await conn.execute(
       `
       UPDATE notifications
@@ -45,10 +59,7 @@ export async function PUT(req: Request) {
     return Response.json({ message: "all notifications marked as read" });
   } catch (err) {
     console.error("PUT /api/notifications/read-all error:", err);
-    return Response.json(
-      { message: "failed to mark notifications as read" },
-      { status: 500 }
-    );
+    return Response.json({ message: "invalid token" }, { status: 401 });
   } finally {
     conn.release();
   }
