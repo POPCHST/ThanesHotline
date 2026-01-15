@@ -44,17 +44,14 @@
  *       401:
  *         description: Unauthorized
  */
-
 import pool from "@/lib/db";
+import { withAuth } from "@/lib/withAuth";
 
-export async function GET(req: Request) {
+export const GET = withAuth(async (req, user) => {
   const conn = await pool.getConnection();
 
   try {
-    const userId = (req as any).user?.id;
-    if (!userId) {
-      return Response.json({ message: "unauthorized" }, { status: 401 });
-    }
+    const userId = user.id; // ✅ มาจริงแล้ว
 
     const [rows]: any = await conn.execute(
       `
@@ -76,13 +73,7 @@ export async function GET(req: Request) {
     );
 
     return Response.json(rows);
-  } catch (err) {
-    console.error("GET /api/notifications error:", err);
-    return Response.json(
-      { message: "failed to load notifications" },
-      { status: 500 }
-    );
   } finally {
     conn.release();
   }
-}
+});
