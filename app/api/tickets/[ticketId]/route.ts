@@ -92,34 +92,51 @@ export const GET = withAuth(async (req, user) => {
     if (!ticketId) {
       return Response.json({ message: "invalid ticket id" }, { status: 400 });
     }
-
     const [rows]: any = await conn.execute(
       `
-      SELECT
-        t.ticket_id,
-        t.ticket_no,
-        t.issue_title,
-        t.issue_detail,
-        t.priority_code,
-        t.impact_level,
-        t.urgency_level,
-        t.status_code,
-        t.department_id,
-        t.assigned_user_name,
-        t.created_at,
+  SELECT
+    t.ticket_id,
+    t.ticket_no,
+    t.issue_title,
+    t.issue_detail,
+    t.priority_code,
+    t.impact_level,
+    t.urgency_level,
+    t.status_code,
+    t.department_id,
+    t.assigned_user_name,
+    t.created_at,
+    t.is_service_case,
 
-        c.customer_name,
-        c.customer_ward,
-        c.contact_name,
-        c.contact_phone,
+    c.customer_name,
+    c.customer_ward,
+    c.contact_name,
+    c.contact_phone,
 
-        d.device_name
-      FROM tickets t
-      LEFT JOIN m_customers c ON t.customer_id = c.customer_id
-      LEFT JOIN m_devices d ON t.device_id = d.device_id
-      WHERE t.ticket_id = ?
-      LIMIT 1
-      `,
+    d.device_name,
+
+    sv.service_id,
+    sv.service_types,
+    sv.work_order_no,
+    sv.cost_estimate,
+    sv.serial_before,
+    sv.serial_after,
+    sv.replaced_parts,
+    sv.service_note,
+    sv.created_at AS service_created_at,
+    sv.updated_at AS service_updated_at
+    
+    FROM tickets t
+    LEFT JOIN m_customers c
+        ON t.customer_id = c.customer_id
+    LEFT JOIN m_devices d
+        ON t.device_id = d.device_id
+    LEFT JOIN ticket_service sv
+        ON sv.ticket_id = t.ticket_id
+  
+    WHERE t.ticket_id = ?
+    LIMIT 1
+  `,
       [ticketId]
     );
 
