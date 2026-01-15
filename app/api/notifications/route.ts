@@ -51,7 +51,7 @@ export const GET = withAuth(async (req, user) => {
   const conn = await pool.getConnection();
 
   try {
-    const userId = user.id; // ✅ มาจริงแล้ว
+    const userId = user.user_id;
 
     const [rows]: any = await conn.execute(
       `

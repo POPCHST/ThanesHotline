@@ -28,7 +28,7 @@ export async function PUT(req: Request) {
   const conn = await pool.getConnection();
 
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.user_id;
     if (!userId) {
       return Response.json({ message: "unauthorized" }, { status: 401 });
     }
