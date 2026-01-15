@@ -1544,5 +1544,120 @@ export const swaggerSpec = {
         },
       },
     },
+    // ===============================
+    // Notification
+    // ===============================
+    "/api/notifications": {
+      get: {
+        summary: "Get latest notifications of current user",
+        tags: ["Notification"],
+        responses: {
+          200: {
+            description: "List of notifications",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "integer", example: 12 },
+                      type: {
+                        type: "string",
+                        example: "assign_ticket",
+                      },
+                      ref_type: {
+                        type: "string",
+                        example: "ticket",
+                      },
+                      ref_id: {
+                        type: "integer",
+                        example: 49,
+                      },
+                      title: {
+                        type: "string",
+                        example: "มีงานใหม่ถูกมอบหมาย",
+                      },
+                      message: {
+                        type: "string",
+                        example:
+                          "คุณได้รับมอบหมายงาน Ticket #TCK-1768446030607",
+                      },
+                      is_read: {
+                        type: "integer",
+                        example: 0,
+                      },
+                      created_at: {
+                        type: "string",
+                        example: "2026-01-15 12:44:54",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            description: "Unauthorized",
+          },
+        },
+      },
+    },
+
+    "/api/notifications/unread-count": {
+      get: {
+        summary: "Get unread notification count of current user",
+        tags: ["Notification"],
+        responses: {
+          200: {
+            description: "Unread notification count",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    unread: {
+                      type: "integer",
+                      example: 3,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            description: "Unauthorized",
+          },
+        },
+      },
+    },
+
+    "/api/notifications/read-all": {
+      put: {
+        summary: "Mark all notifications as read for current user",
+        tags: ["Notification"],
+        responses: {
+          200: {
+            description: "All notifications marked as read",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "all notifications marked as read",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            description: "Unauthorized",
+          },
+        },
+      },
+    },
   },
 };
