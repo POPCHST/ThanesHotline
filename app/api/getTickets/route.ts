@@ -47,90 +47,102 @@ export async function GET(req: Request) {
   const keyword = searchParams.get("keyword");
 
   let sql = `
-   SELECT
-    t.ticket_id,
-    t.ticket_no,
+  SELECT
+  t.ticket_id,
+  t.ticket_no,
 
-    -- Customer
-    t.customer_id,
-    c.customer_name,
-    c.contact_name,
-    c.customer_ward,
-    c.contact_phone,
+  -- Customer
+  t.customer_id,
+  c.customer_name,
+  c.contact_name,
+  c.customer_ward,
+  c.contact_phone,
 
-    -- Device
-    t.device_id,
-    d.device_name,
+  -- Device
+  t.device_id,
+  d.device_name,
 
-    -- Issue type
-    t.issue_type_id,
+  -- Issue type
+  t.issue_type_id,
 
-    -- Ticket info
-    t.issue_title,
-    t.issue_detail,
-    t.priority_code,
-    t.impact_level,
-    t.urgency_level,
+  -- Ticket info
+  t.issue_title,
+  t.issue_detail,
+  t.priority_code,
+  t.impact_level,
+  t.urgency_level,
 
-    -- Department
-    t.department_id,
-    dp.department_name,
+  -- Department
+  t.department_id,
+  dp.department_name,
 
-    -- Assigned user
-    t.assigned_user_id,
-    ua.full_name AS assigned_user_name,
+  -- Assigned user
+  t.assigned_user_id,
+  ua.full_name AS assigned_user_name,
 
-    -- Created by
-    t.created_by,
-    uc.full_name AS created_by_name,
+  -- Created by
+  t.created_by,
+  uc.full_name AS created_by_name,
 
-    -- Tag
-    t.tag_id,
-    tg.tag_name,
+  -- Tag
+  t.tag_id,
+  tg.tag_name,
 
-    -- Status
-    t.status_code,
-    st.status_name,
+  -- Status
+  t.status_code,
+  st.status_name,
 
-    -- Flags
-    t.is_service_case,
-    t.is_reopen,
-    t.reopen_count,
-    t.is_deleted,
+  -- Flags
+  t.is_service_case,
+  t.is_reopen,
+  t.reopen_count,
+  t.is_deleted,
 
-    -- Dates
-    t.opened_at,
-    t.first_response_at,
-    t.resolved_at,
-    t.closed_at,
+  -- Dates
+  t.opened_at,
+  t.first_response_at,
+  t.resolved_at,
+  t.closed_at,
 
-    -- Audit
-    t.created_by,
-    t.created_at,
-    t.updated_at,
+  -- Audit
+  t.created_at,
+  t.updated_at,
 
-    -- ===== Service : โชว์เฉพาะตอน is_service_case = 1 =====
-    CASE WHEN t.is_service_case = 1 THEN s.service_id      ELSE NULL END AS service_id,
-    CASE WHEN t.is_service_case = 1 THEN s.service_types   ELSE NULL END AS service_types,
-    CASE WHEN t.is_service_case = 1 THEN s.work_order_no   ELSE NULL END AS work_order_no,
-    CASE WHEN t.is_service_case = 1 THEN s.cost_estimate   ELSE NULL END AS cost_estimate,
-    CASE WHEN t.is_service_case = 1 THEN s.serial_before   ELSE NULL END AS serial_before,
-    CASE WHEN t.is_service_case = 1 THEN s.serial_after    ELSE NULL END AS serial_after,
-    CASE WHEN t.is_service_case = 1 THEN s.replaced_parts  ELSE NULL END AS replaced_parts,
-    CASE WHEN t.is_service_case = 1 THEN s.service_note    ELSE NULL END AS service_note,
-    CASE WHEN t.is_service_case = 1 THEN s.created_at      ELSE NULL END AS service_created_at,
-    CASE WHEN t.is_service_case = 1 THEN s.updated_at      ELSE NULL END AS service_updated_at
+  -- Service
+  CASE WHEN t.is_service_case = 1 THEN s.service_id     ELSE NULL END AS service_id,
+  CASE WHEN t.is_service_case = 1 THEN s.service_types  ELSE NULL END AS service_types,
+  CASE WHEN t.is_service_case = 1 THEN s.work_order_no  ELSE NULL END AS work_order_no,
+  CASE WHEN t.is_service_case = 1 THEN s.cost_estimate  ELSE NULL END AS cost_estimate,
+  CASE WHEN t.is_service_case = 1 THEN s.serial_before  ELSE NULL END AS serial_before,
+  CASE WHEN t.is_service_case = 1 THEN s.serial_after   ELSE NULL END AS serial_after,
+  CASE WHEN t.is_service_case = 1 THEN s.replaced_parts ELSE NULL END AS replaced_parts,
+  CASE WHEN t.is_service_case = 1 THEN s.service_note   ELSE NULL END AS service_note,
+  CASE WHEN t.is_service_case = 1 THEN s.created_at     ELSE NULL END AS service_created_at,
+  CASE WHEN t.is_service_case = 1 THEN s.updated_at     ELSE NULL END AS service_updated_at,
+
+  r.resolution_id,
+  r.resolution_text,
+  r.resolution_by,
+  ur.full_name AS resolution_by_name,
+  r.resolution_at
 
 FROM tickets t
-LEFT JOIN m_customers c       ON t.customer_id = c.customer_id
-LEFT JOIN m_devices d         ON t.device_id = d.device_id
-LEFT JOIN m_departments dp    ON t.department_id = dp.department_id
-LEFT JOIN m_users ua          ON t.assigned_user_id = ua.user_id
-LEFT JOIN m_users uc          ON t.created_by = uc.user_id
-LEFT JOIN m_tags tg           ON t.tag_id = tg.tag_id
-LEFT JOIN m_ticket_status st  ON t.status_code = st.status_code
+LEFT JOIN m_customers c      ON t.customer_id = c.customer_id
+LEFT JOIN m_devices d        ON t.device_id = d.device_id
+LEFT JOIN m_departments dp   ON t.department_id = dp.department_id
+LEFT JOIN m_users ua         ON t.assigned_user_id = ua.user_id
+LEFT JOIN m_users uc         ON t.created_by = uc.user_id
+LEFT JOIN m_tags tg          ON t.tag_id = tg.tag_id
+LEFT JOIN m_ticket_status st ON t.status_code = st.status_code
+LEFT JOIN ticket_service s   ON t.ticket_id = s.ticket_id
 
-LEFT JOIN ticket_service s    ON t.ticket_id = s.ticket_id
+-- JOIN resolution ก่อน
+LEFT JOIN ticket_resolution r ON t.ticket_id = r.ticket_id
+LEFT JOIN m_users ur          ON r.resolution_by = ur.user_id
+
+WHERE 1=1
+ORDER BY t.created_at DESC;
+
 
   `;
 
