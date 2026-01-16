@@ -1736,5 +1736,107 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/ticket-update/recovery": {
+      put: {
+        tags: ["Ticket"],
+        summary: "Recover deleted ticket",
+        description:
+          "Restore ticket ที่ถูกลบ (soft delete) โดยตั้งค่า is_deleted = 0",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["ticket_no", "updated_by"],
+                properties: {
+                  ticket_no: {
+                    type: "string",
+                    example: "TK-2025-000123",
+                  },
+                  updated_by: {
+                    type: "integer",
+                    example: 5,
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Ticket recovered successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket recovered successfully",
+                    },
+                    ticket_no: {
+                      type: "string",
+                      example: "TK-2025-000123",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Missing required fields",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "missing required fields",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "Ticket not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "ticket not found",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Recover ticket failed",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "recover ticket failed",
+                    },
+                    error: {
+                      type: "string",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 };
