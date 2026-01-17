@@ -60,7 +60,7 @@ export const GET = withAuth(async (req, user) => {
         t.ticket_no,
 
         t.assigned_user_id,
-        u.name AS assigned_user_name,
+        u.full_name  AS assigned_user_name,
 
         s.score,
         s.rated_at,
