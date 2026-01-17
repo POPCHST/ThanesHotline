@@ -49,46 +49,52 @@ export const GET = withAuth(async (req, user) => {
   const conn = await pool.getConnection();
 
   try {
-    const userId = user.user_id;
-    const isAdmin = user.department === "ADMIN";
+    const url = new URL(req.url);
+    const qAssigned = url.searchParams.get("assigned_user_id");
 
-    const params: any[] = [];
+    let assignedUserId: number | null = null;
 
-    let sql = `
+    // ADMIN เลือกดูใครก็ได้
+    if (user.department_code === "ADMIN") {
+      assignedUserId = qAssigned ? Number(qAssigned) : null;
+    }
+    // IT / non-admin → ดูของตัวเองเท่านั้น
+    else {
+      assignedUserId = user.user_id;
+    }
+
+    const [rows]: any = await conn.execute(
+      `
       SELECT
         t.id AS ticket_id,
         t.ticket_no,
-
         t.assigned_user_id,
-        u.full_name  AS assigned_user_name,
-
+        u.full_name AS assigned_user_name,
+        t.status_code,
         s.score,
         s.rated_at,
         t.updated_at
       FROM tickets t
-      LEFT JOIN m_users u
+      LEFT JOIN users u
         ON u.user_id = t.assigned_user_id
-      LEFT JOIN ticket_satisfaction s
+      LEFT JOIN satisfaction s
         ON s.ticket_id = t.id
         AND s.is_used = 1
-      WHERE s.score IS NOT NULL
-    `;
-
-    // non-admin เห็นเฉพาะงานที่ตัวเองรับผิดชอบ
-    if (!isAdmin) {
-      sql += ` AND t.assigned_user_id = ? `;
-      params.push(userId);
-    }
-
-    sql += `
+      WHERE 1 = 1
+        AND (? IS NULL OR t.assigned_user_id = ?)
       ORDER BY
         s.rated_at DESC,
         t.updated_at DESC
-    `;
-
-    const [rows]: any = await conn.execute(sql, params);
+      `,
+      [assignedUserId, assignedUserId],
+    );
 
     return Response.json(rows);
+  } catch (err) {
+    console.error("GET /api/tickets/score error:", err);
+    return new Response(JSON.stringify({ message: "Internal Server Error" }), {
+      status: 500,
+    });
   } finally {
     conn.release();
   }
