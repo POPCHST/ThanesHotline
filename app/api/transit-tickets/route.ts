@@ -229,7 +229,7 @@ export async function POST(req: Request) {
     ) {
       return Response.json(
         { message: "missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -251,7 +251,7 @@ export async function POST(req: Request) {
         lastmodify
       ) VALUES (?, ?, ?, ?, NOW())
       `,
-      [customer_name, customer_ward, contact_name, contact_phone]
+      [customer_name, customer_ward, contact_name, contact_phone],
     );
 
     const customer_id = custResult.insertId;
@@ -262,7 +262,7 @@ export async function POST(req: Request) {
     // ===============================
     const [devResult]: any = await conn.execute(
       `INSERT INTO m_devices (device_name) VALUES (?)`,
-      [device_name]
+      [device_name],
     );
 
     const device_id = devResult.insertId;
@@ -319,15 +319,74 @@ export async function POST(req: Request) {
         is_service_case,
         created_by,
         created_at,
-      ]
+      ],
     );
+
+    // const ticket_id = ticketResult.insertId;
+    // if (!ticket_id) throw new Error("ticket insert failed");
+
+    // try {
+    //   if (assigned_user_id && Number(assigned_user_id) > 0) {
+    //     await conn.execute(
+    //       `
+    //   INSERT INTO notifications (
+    //     user_id,
+    //     type,
+    //     ref_type,
+    //     ref_id,
+    //     title,
+    //     message,
+    //     created_at
+    //   ) VALUES (?, 'assign_ticket', 'ticket', ?, ?, ?, NOW())
+    //   `,
+    //       [
+    //         assigned_user_id,
+    //         ticket_id,
+    //         "มีงานใหม่ถูกมอบหมาย",
+    //         `คุณได้รับมอบหมายงาน Ticket #${ticket_no}`,
+    //       ]
+    //     );
+    //   }
+    // } catch (e) {
+    //   console.warn("AUTO notification failed:", e);
+    // }
 
     const ticket_id = ticketResult.insertId;
     if (!ticket_id) throw new Error("ticket insert failed");
 
     try {
+      const notifications: any[] = [];
+
+      // แจ้งเตือนคนที่ถูก assign
       if (assigned_user_id && Number(assigned_user_id) > 0) {
-        await conn.execute(
+        notifications.push([
+          assigned_user_id,
+          "assign_ticket",
+          "ticket",
+          ticket_id,
+          "มีงานใหม่ถูกมอบหมาย",
+          `คุณได้รับมอบหมายงาน Ticket #${ticket_no}`,
+        ]);
+      }
+
+      // แจ้งเตือนคนที่เป็นผู้สร้าง / สั่งงาน
+      if (
+        created_by &&
+        Number(created_by) > 0 &&
+        Number(created_by) !== Number(assigned_user_id)
+      ) {
+        notifications.push([
+          created_by,
+          "assign_ticket",
+          "ticket",
+          ticket_id,
+          "มอบหมายงานสำเร็จ",
+          `คุณได้มอบหมายงาน Ticket #${ticket_no} เรียบร้อยแล้ว`,
+        ]);
+      }
+
+      if (notifications.length > 0) {
+        await conn.query(
           `
       INSERT INTO notifications (
         user_id,
@@ -337,14 +396,9 @@ export async function POST(req: Request) {
         title,
         message,
         created_at
-      ) VALUES (?, 'assign_ticket', 'ticket', ?, ?, ?, NOW())
+      ) VALUES ?
       `,
-          [
-            assigned_user_id,
-            ticket_id,
-            "มีงานใหม่ถูกมอบหมาย",
-            `คุณได้รับมอบหมายงาน Ticket #${ticket_no}`,
-          ]
+          [notifications.map((n) => [...n, new Date()])],
         );
       }
     } catch (e) {
@@ -387,7 +441,7 @@ export async function POST(req: Request) {
           serial_after ?? null,
           replaced_parts ?? null,
           service_note ?? null,
-        ]
+        ],
       );
     }
 
@@ -406,7 +460,7 @@ export async function POST(req: Request) {
           ?, ?, ?, NOW()
         )
         `,
-        [ticket_id, resolution_text, resolution_by]
+        [ticket_id, resolution_text, resolution_by],
       );
     }
 
@@ -426,7 +480,7 @@ export async function POST(req: Request) {
 
     return Response.json(
       { message: "transaction failed", error: String(err) },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     conn.release();
