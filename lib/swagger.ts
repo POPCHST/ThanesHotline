@@ -1838,5 +1838,59 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/tickets/score": {
+      get: {
+        summary: "Get ticket satisfaction scores",
+        tags: ["Ticket"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "query",
+            name: "assigned_user_id",
+            required: false,
+            schema: { type: "integer" },
+            description:
+              "Filter by assigned user (ADMIN only). IT will be forced to see own data.",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Ticket score list",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      ticket_id: { type: "integer", example: 101 },
+                      ticket_no: { type: "string", example: "TCK-1768" },
+                      assigned_user_id: { type: "integer", example: 6 },
+                      assigned_user_name: {
+                        type: "string",
+                        example: "POP Dev",
+                      },
+                      score: { type: "integer", example: 5 },
+                      rated_at: {
+                        type: "string",
+                        example: "2026-01-16 14:30:00",
+                        nullable: true,
+                      },
+                      updated_at: {
+                        type: "string",
+                        example: "2026-01-16 14:35:00",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            description: "Unauthorized",
+          },
+        },
+      },
+    },
   },
 };
