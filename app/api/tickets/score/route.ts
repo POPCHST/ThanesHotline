@@ -66,9 +66,9 @@ export const GET = withAuth(async (req, user) => {
         s.rated_at,
         t.updated_at
       FROM tickets t
-      LEFT JOIN users u
+      LEFT JOIN m_users u
         ON u.id = t.assigned_user_id
-      LEFT JOIN satisfaction s
+      LEFT JOIN ticket_satisfaction s
         ON s.ticket_id = t.id
         AND s.is_used = 1
       WHERE s.score IS NOT NULL
