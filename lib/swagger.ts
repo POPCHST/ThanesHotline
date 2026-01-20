@@ -1892,5 +1892,112 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/tickets/{ticketId}/attachments": {
+      get: {
+        summary: "Get attachments by ticket ID",
+        tags: ["Attachment"],
+        parameters: [
+          {
+            name: "ticketId",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+            example: 1,
+          },
+        ],
+        responses: {
+          200: {
+            description: "List of attachments",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      attachment_id: { type: "integer", example: 10 },
+                      file_name: { type: "string", example: "error.png" },
+                      file_path: {
+                        type: "string",
+                        example: "/uploads/tickets/1/1700000000000-error.png",
+                      },
+                      uploaded_at: {
+                        type: "string",
+                        format: "date-time",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: "Invalid ticket id" },
+          500: { description: "Internal server error" },
+        },
+      },
+
+      post: {
+        summary: "Upload attachment for ticket",
+        tags: ["Attachment"],
+        parameters: [
+          {
+            name: "ticketId",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+            example: 1,
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["file"],
+                properties: {
+                  file: {
+                    type: "string",
+                    format: "binary",
+                    description: "Attachment file (image, pdf, etc.)",
+                  },
+                  uploaded_by: {
+                    type: "integer",
+                    example: 1,
+                    description: "User ID who uploads the file",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: "Attachment uploaded successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    attachment_id: { type: "integer", example: 10 },
+                    file_name: { type: "string", example: "error.png" },
+                    file_path: {
+                      type: "string",
+                      example: "/uploads/tickets/1/1700000000000-error.png",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: "File is required" },
+          500: { description: "Upload failed" },
+        },
+      },
+    },
   },
 };
