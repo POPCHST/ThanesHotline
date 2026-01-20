@@ -1,8 +1,3 @@
-import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db";
-import fs from "fs/promises";
-import path from "path";
-
 /**
  * @swagger
  * /api/tickets/{ticketId}/attachments:
@@ -32,78 +27,78 @@ import path from "path";
  *       201:
  *         description: Upload สำเร็จ
  */
+import { NextRequest, NextResponse } from "next/server";
+import db from "@/lib/db";
+import fs from "fs/promises";
+import path from "path";
+
+/* ===================== POST ===================== */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { ticketId: string } },
+  context: { params: Promise<{ ticketId: string }> },
 ) {
-  const ticketId = Number(params.ticketId);
-  if (isNaN(ticketId)) {
+  const { ticketId } = await context.params;
+  const id = Number(ticketId);
+
+  if (isNaN(id)) {
     return NextResponse.json({ message: "Invalid ticketId" }, { status: 400 });
   }
 
   const formData = await req.formData();
-  const file = formData.get("file") as File | null;
+  const files = formData.getAll("file") as File[];
   const uploadedBy = Number(formData.get("uploaded_by") || null);
 
-  if (!file) {
+  if (!files.length) {
     return NextResponse.json({ message: "File is required" }, { status: 400 });
   }
 
-  // สร้างโฟลเดอร์
   const uploadDir = path.join(
     process.cwd(),
     "public",
     "uploads",
     "tickets",
-    ticketId.toString(),
+    id.toString(),
   );
 
   await fs.mkdir(uploadDir, { recursive: true });
 
-  // ตั้งชื่อไฟล์
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const fileName = `${Date.now()}-${file.name}`;
-  const filePath = path.join(uploadDir, fileName);
+  const inserted: any[] = [];
 
-  // เขียนไฟล์ลง server
-  await fs.writeFile(filePath, buffer);
+  for (const file of files) {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const fileName = `${Date.now()}-${file.name}`;
+    const filePath = path.join(uploadDir, fileName);
 
-  // path ที่เก็บลง DB (ใช้กับ frontend)
-  const dbFilePath = `/uploads/tickets/${ticketId}/${fileName}`;
+    await fs.writeFile(filePath, buffer);
 
-  // INSERT DB
-  const [result]: any = await db.query(
-    `
-    INSERT INTO ticket_attachments
-      (ticket_id, file_name, file_path, uploaded_by)
-    VALUES (?, ?, ?, ?)
-    `,
-    [ticketId, file.name, dbFilePath, uploadedBy],
-  );
+    const dbFilePath = `/uploads/tickets/${id}/${fileName}`;
 
-  return NextResponse.json(
-    {
+    const [result]: any = await db.query(
+      `
+      INSERT INTO ticket_attachments
+        (ticket_id, file_name, file_path, uploaded_by)
+      VALUES (?, ?, ?, ?)
+      `,
+      [id, file.name, dbFilePath, uploadedBy],
+    );
+
+    inserted.push({
       attachment_id: result.insertId,
       file_name: file.name,
       file_path: dbFilePath,
-    },
-    { status: 201 },
-  );
+    });
+  }
+
+  return NextResponse.json(inserted, { status: 201 });
 }
 
-/**
- * @swagger
- * /api/tickets/{ticketId}/attachments:
- *   get:
- *     summary: ดึงไฟล์แนบของ Ticket
- *     tags:
- *       - Ticket Attachments
- */
+/* ===================== GET ===================== */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { ticketId: string } },
+  context: { params: Promise<{ ticketId: string }> },
 ) {
-  const ticketId = Number(params.ticketId);
+  const { ticketId } = await context.params;
+  const id = Number(ticketId);
 
   const [rows] = await db.query(
     `
@@ -116,7 +111,7 @@ export async function GET(
     WHERE ticket_id = ?
     ORDER BY uploaded_at
     `,
-    [ticketId],
+    [id],
   );
 
   return NextResponse.json(rows);
