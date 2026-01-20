@@ -33,11 +33,9 @@ import fs from "fs/promises";
 import path from "path";
 
 /* ===================== POST ===================== */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { ticketId: string } },
-) {
-  const id = Number(params.ticketId);
+export async function POST(req: NextRequest, context: any) {
+  const { ticketId } = await context.params;
+  const id = Number(ticketId);
 
   if (isNaN(id)) {
     return NextResponse.json({ message: "Invalid ticketId" }, { status: 400 });
@@ -92,11 +90,9 @@ export async function POST(
 }
 
 /* ===================== GET ===================== */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { ticketId: string } },
-) {
-  const id = Number(params.ticketId);
+export async function GET(req: NextRequest, context: any) {
+  const { ticketId } = await context.params;
+  const id = Number(ticketId);
 
   const [rows] = await db.query(
     `
